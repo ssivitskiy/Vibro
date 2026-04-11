@@ -28,7 +28,7 @@ const App = (() => {
   let assetStatusFilter = 'all';
   let assetRiskFilter = 'all';
   let assetSortMode = 'priority';
-  const ASSET_VERSION = '20260411-demo-simplify-12';
+  const ASSET_VERSION = '20260411-profile-health-alerts-13';
   const STORAGE_KEYS = {
     legacyAuth: 'vm_local_auth_v1',
     legacySessions: 'vm_local_sessions_v1',
@@ -682,6 +682,139 @@ const App = (() => {
       });
   }
 
+  function sortAssetOverviewsByPriority(overviews) {
+    const riskWeight = { critical: 4, high: 3, medium: 2, low: 1 };
+    return [...overviews].sort((a, b) => {
+      const riskA = riskWeight[a.riskMeta.key] || 0;
+      const riskB = riskWeight[b.riskMeta.key] || 0;
+      if (riskA !== riskB) return riskB - riskA;
+      if (a.healthScore !== b.healthScore) return a.healthScore - b.healthScore;
+      const timeA = a.lastUpdated ? new Date(a.lastUpdated).getTime() : 0;
+      const timeB = b.lastUpdated ? new Date(b.lastUpdated).getTime() : 0;
+      return timeB - timeA;
+    });
+  }
+
+  function getPriorityAssetOverviews() {
+    return sortAssetOverviewsByPriority(assetRegistry.map(getAssetOverview));
+  }
+
+  function getBaselineCandidateSession(overview) {
+    if (!overview) return null;
+    return overview.sessions.find((item) => item.isBaseline)
+      || [...overview.sessions].reverse().find((item) => item.cls === 'normal' && ['healthy', 'after_maintenance'].includes(item.stateKey))
+      || [...overview.sessions].reverse().find((item) => ['healthy', 'after_maintenance'].includes(item.stateKey))
+      || overview.sessions[overview.sessions.length - 1]
+      || null;
+  }
+
+  function buildProfileAlert(overview) {
+    if (!overview) return null;
+    const latest = overview.latest;
+    const latestMeasurement = overview.latestMeasurement;
+    const unlinkedMeasurements = overview.measurements.filter((item) => !item.inspectionId).length;
+    const diagnosis = latest ? (VM.RU[latest.cls] || latest.cls) : 'Нет сохранённой инспекции';
+    const comparisonTarget = latest?.id || null;
+
+    if (latest && (overview.riskMeta.key === 'critical' || overview.healthScore <= 40)) {
+      return {
+        assetId: overview.asset.id,
+        inspectionId: comparisonTarget,
+        tone: 'critical',
+        priority: 100,
+        badge: overview.riskMeta.label,
+        title: `${overview.asset.name}: требуется немедленное внимание`,
+        summary: `${diagnosis} · health ${overview.healthScore}/100 · ${overview.riskMeta.note}`,
+        note: latest.actionTaken || latest.engineerReason || latest.note || 'Откройте историю и подтвердите следующий шаг по узлу.',
+        primaryAction: latest.stateKey === 'service'
+          ? { type: 'prepare-after', label: 'КОНТРОЛЬ ПОСЛЕ ТО' }
+          : { type: 'prepare-repair', label: 'ПОДГОТОВИТЬ РЕМОНТ' },
+        secondaryAction: { type: 'open-compare', label: 'СРАВНЕНИЕ' },
+      };
+    }
+
+    if (latest && latest.stateKey === 'service') {
+      return {
+        assetId: overview.asset.id,
+        inspectionId: comparisonTarget,
+        tone: 'warning',
+        priority: 92,
+        badge: 'After maintenance',
+        title: `${overview.asset.name}: нужен контроль после обслуживания`,
+        summary: `${diagnosis} · узел находится в сервисном цикле и ждёт контрольную запись.`,
+        note: latest.actionTaken || 'Подготовьте контрольный сеанс и переведите узел в after maintenance после повторной проверки.',
+        primaryAction: { type: 'prepare-after', label: 'СДЕЛАТЬ AFTER' },
+        secondaryAction: { type: 'open-journal', label: 'ОТКРЫТЬ ЖУРНАЛ' },
+      };
+    }
+
+    if (latest && overview.healthTrend.direction === 'down' && overview.healthScore < 72) {
+      return {
+        assetId: overview.asset.id,
+        inspectionId: comparisonTarget,
+        tone: 'warning',
+        priority: 84,
+        badge: 'Деградация',
+        title: `${overview.asset.name}: тренд уходит вниз`,
+        summary: `${diagnosis} · ${overview.healthTrend.label.toLowerCase()} ${formatSignedScore(overview.healthTrend.delta)} · health ${overview.healthScore}/100`,
+        note: latest.engineerReason || latest.note || 'Сравните последнюю запись с baseline и проверьте, не ускоряется ли деградация.',
+        primaryAction: { type: 'open-compare', label: 'ОТКРЫТЬ СРАВНЕНИЕ' },
+        secondaryAction: { type: 'open-journal', label: 'К ЖУРНАЛУ' },
+      };
+    }
+
+    if (!overview.baseline && overview.sessions.length) {
+      const candidate = getBaselineCandidateSession(overview);
+      if (candidate) {
+        return {
+          assetId: overview.asset.id,
+          inspectionId: candidate.id,
+          tone: 'info',
+          priority: 74,
+          badge: 'Нет baseline',
+          title: `${overview.asset.name}: назначьте эталонный сеанс`,
+        summary: `${overview.sessions.length} сохранённых сеансов · baseline нужен для корректного compare и отчётов.`,
+        note: 'Назначьте healthy- или after maintenance-сеанс эталоном, чтобы сравнения и отчёты стали стабильнее.',
+        primaryAction: { type: 'set-baseline', label: 'СДЕЛАТЬ BASELINE' },
+        secondaryAction: { type: 'open-compare', label: 'ОТКРЫТЬ СРАВНЕНИЕ' },
+        };
+      }
+    }
+
+    if (unlinkedMeasurements && latestMeasurement) {
+      return {
+        assetId: overview.asset.id,
+        inspectionId: comparisonTarget,
+        measurementId: latestMeasurement.id,
+        tone: 'info',
+        priority: 66,
+        badge: 'Raw data',
+        title: `${overview.asset.name}: есть новые измерения`,
+        summary: `${unlinkedMeasurements} raw-запис${unlinkedMeasurements === 1 ? 'ь' : 'и'} без связанной inspection в истории.`,
+        note: latestMeasurement.originalName || 'Откройте последнее измерение на странице анализа и при необходимости сохраните его как новый сеанс.',
+        primaryAction: { type: 'open-measurement', label: 'ОТКРЫТЬ В АНАЛИЗЕ' },
+        secondaryAction: { type: 'open-monitoring', label: 'К МОНИТОРИНГУ' },
+      };
+    }
+
+    if (latest && latest.stateKey === 'warning' && latest.workStatus !== 'repair') {
+      return {
+        assetId: overview.asset.id,
+        inspectionId: comparisonTarget,
+        tone: 'warning',
+        priority: 60,
+        badge: overview.riskMeta.label,
+        title: `${overview.asset.name}: нужен следующий шаг по warning-сценарию`,
+        summary: `${diagnosis} · ${overview.riskMeta.note}`,
+        note: latest.actionTaken || latest.engineerReason || 'Подготовьте запись для сервисного шага или сравните кейс с baseline.',
+        primaryAction: { type: 'prepare-repair', label: 'ПОДГОТОВИТЬ РЕМОНТ' },
+        secondaryAction: { type: 'open-compare', label: 'СРАВНЕНИЕ' },
+      };
+    }
+
+    return null;
+  }
+
   function syncWorkStatusFromState(force = false) {
     const stateNode = el('sessionStateInput');
     const workNode = el('workStatusInput');
@@ -838,6 +971,128 @@ const App = (() => {
           В браузере найден локальный журнал. Нажмите «Импорт из браузера», чтобы перенести старые записи в серверную базу.
         </div>` : ''}
     `;
+  }
+
+  function renderProfileHealthOverview() {
+    const summaryNode = el('profileHealthSummary');
+    const alertListNode = el('profileAlertList');
+    const alertEmptyNode = el('profileAlertEmpty');
+    if (!summaryNode || !alertListNode || !alertEmptyNode) return;
+
+    if (!apiReady) {
+      summaryNode.innerHTML = `<div class="workspace-empty-block">Backend недоступен. После запуска API здесь появятся health score, alert-ы и сводка по сохранённым узлам.</div>`;
+      alertEmptyNode.style.display = 'block';
+      alertEmptyNode.textContent = 'Alert-лента появится после запуска серверного контура.';
+      alertListNode.innerHTML = '';
+      return;
+    }
+
+    if (!authState?.id) {
+      summaryNode.innerHTML = `<div class="workspace-empty-block">Войдите в аккаунт, чтобы видеть здоровье узлов, приоритетные alert-ы и сохранённую историю по оборудованию.</div>`;
+      alertEmptyNode.style.display = 'block';
+      alertEmptyNode.textContent = 'После входа здесь появятся узлы, требующие внимания, и рекомендации по следующему действию.';
+      alertListNode.innerHTML = '';
+      return;
+    }
+
+    const overviews = getPriorityAssetOverviews();
+    if (!overviews.length) {
+      summaryNode.innerHTML = `<div class="workspace-empty-block">Сохраните первый серверный сеанс, и профиль начнёт считать health score, отслеживать деградацию и выделять важные кейсы.</div>`;
+      alertEmptyNode.style.display = 'block';
+      alertEmptyNode.textContent = 'Alert-лента появится после первой сохранённой записи.';
+      alertListNode.innerHTML = '';
+      return;
+    }
+
+    const avgHealth = Math.round(overviews.reduce((acc, item) => acc + item.healthScore, 0) / overviews.length);
+    const needsAttention = overviews.filter((item) => ['high', 'critical'].includes(item.riskMeta.key) || item.healthScore < 60).length;
+    const recovering = overviews.filter((item) => normalizeStateKey(item.latest?.stateKey || item.asset.currentStatus) === 'after_maintenance').length;
+    const withoutBaseline = overviews.filter((item) => !item.baseline).length;
+    const rawWaiting = overviews.reduce((acc, item) => acc + item.measurements.filter((measurement) => !measurement.inspectionId).length, 0);
+    const topPriority = overviews[0] || null;
+    const topPalette = getHealthPalette(topPriority?.healthTone || 'info');
+    const topDiagnosis = topPriority?.latest ? (VM.RU[topPriority.latest.cls] || topPriority.latest.cls) : 'Нет инспекций';
+
+    summaryNode.innerHTML = `
+      <div class="profile-health-grid">
+        <div class="profile-health-card">
+          <span>Активных узлов</span>
+          <strong>${overviews.length}</strong>
+          <small>${dashboardSummary?.inspections ?? sessionHistory.length} сохранённых сеансов</small>
+        </div>
+        <div class="profile-health-card profile-health-card--${getHealthTone(avgHealth)}">
+          <span>Средний health</span>
+          <strong>${avgHealth}/100</strong>
+          <small>${escapeHtml(getHealthLabel(avgHealth))}</small>
+        </div>
+        <div class="profile-health-card profile-health-card--warning">
+          <span>Требуют внимания</span>
+          <strong>${needsAttention}</strong>
+          <small>high / critical risk и просевшие health-score</small>
+        </div>
+        <div class="profile-health-card">
+          <span>После обслуживания</span>
+          <strong>${recovering}</strong>
+          <small>узлы в стадии after maintenance</small>
+        </div>
+        <div class="profile-health-card">
+          <span>Без baseline</span>
+          <strong>${withoutBaseline}</strong>
+          <small>сравнение и отчёт пока не опираются на эталон</small>
+        </div>
+        <div class="profile-health-card">
+          <span>Новые raw-записи</span>
+          <strong>${rawWaiting}</strong>
+          <small>измерения без связанной inspection</small>
+        </div>
+      </div>
+      <div class="profile-health-focus">
+        <div class="profile-health-focus-copy">
+          <div class="profile-health-focus-kicker">ПРИОРИТЕТНЫЙ УЗЕЛ</div>
+          <div class="profile-health-focus-title">${escapeHtml(topPriority?.asset.name || 'Пока не определён')}</div>
+          <div class="profile-health-focus-note">
+            ${topPriority ? `${escapeHtml(topDiagnosis)} · ${escapeHtml(topPriority.riskMeta.label)} · ${topPriority.healthScore}/100` : 'Пока нет данных для приоритизации.'}
+          </div>
+          <div class="profile-health-focus-note">
+            ${escapeHtml(topPriority?.latest?.actionTaken || topPriority?.latest?.engineerReason || topPriority?.riskMeta.note || 'После сохранения сеансов система начнёт выделять объекты с повышенным риском.')}
+          </div>
+        </div>
+        <div class="profile-health-focus-chart">
+          ${topPriority ? buildHealthSparkline(topPriority.healthSeries, topPalette.stroke, topPalette.fill) : '<div class="fleet-sparkline-empty">Нет тренда</div>'}
+        </div>
+      </div>
+    `;
+
+    const alerts = overviews
+      .map(buildProfileAlert)
+      .filter(Boolean)
+      .sort((a, b) => b.priority - a.priority)
+      .slice(0, 4);
+
+    if (!alerts.length) {
+      alertEmptyNode.style.display = 'block';
+      alertEmptyNode.textContent = 'Критичных alert-ов сейчас нет. Система не видит срочных действий по сохранённым узлам.';
+      alertListNode.innerHTML = '';
+      return;
+    }
+
+    alertEmptyNode.style.display = 'none';
+    alertListNode.innerHTML = alerts.map((alert) => `
+      <article class="profile-alert-item profile-alert-item--${alert.tone}">
+        <div class="profile-alert-head">
+          <div>
+            <div class="profile-alert-title">${escapeHtml(alert.title)}</div>
+            <div class="profile-alert-copy">${escapeHtml(alert.summary)}</div>
+          </div>
+          <span class="health-badge health-badge--${alert.tone}"><span class="dot"></span>${escapeHtml(alert.badge)}</span>
+        </div>
+        <div class="profile-alert-note">${escapeHtml(alert.note)}</div>
+        <div class="profile-alert-actions">
+          ${alert.primaryAction ? `<button class="history-btn" type="button" data-profile-alert-action="${escapeHtml(alert.primaryAction.type)}" data-asset-id="${escapeHtml(alert.assetId)}" ${alert.inspectionId ? `data-inspection-id="${escapeHtml(alert.inspectionId)}"` : ''} ${alert.measurementId ? `data-measurement-id="${escapeHtml(alert.measurementId)}"` : ''}>${escapeHtml(alert.primaryAction.label)}</button>` : ''}
+          ${alert.secondaryAction ? `<button class="history-btn" type="button" data-profile-alert-action="${escapeHtml(alert.secondaryAction.type)}" data-asset-id="${escapeHtml(alert.assetId)}" ${alert.inspectionId ? `data-inspection-id="${escapeHtml(alert.inspectionId)}"` : ''} ${alert.measurementId ? `data-measurement-id="${escapeHtml(alert.measurementId)}"` : ''}>${escapeHtml(alert.secondaryAction.label)}</button>` : ''}
+        </div>
+      </article>
+    `).join('');
   }
 
   function renderHistoryStats() {
@@ -1054,6 +1309,7 @@ const App = (() => {
   }
 
   function renderWorkspace() {
+    renderProfileHealthOverview();
     renderHistory();
     renderAnalysisComparePanel();
     renderMonitoringFeed();
@@ -2177,6 +2433,32 @@ const App = (() => {
     window.open(new URL(report.shareUrl, window.location.origin).href, '_blank', 'noopener,noreferrer');
   }
 
+  function focusProfileAsset(assetId, sectionId = 'journalPanel') {
+    const asset = getAssetById(assetId);
+    if (!asset) return;
+    selectedAssetId = asset.id;
+    analysisCompareAssetId = asset.id;
+    if (el('assetNameInput')) el('assetNameInput').value = asset.name;
+    syncWorkspaceSelection(asset.id);
+    renderWorkspace();
+    goPage('profile');
+    window.setTimeout(() => el(sectionId)?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  }
+
+  function focusProfileCompare(assetId, mode = 'baseline_saved', inspectionId = null) {
+    const asset = getAssetById(assetId);
+    if (!asset) return;
+    selectedAssetId = asset.id;
+    analysisCompareAssetId = asset.id;
+    if (inspectionId) selectedReportInspectionId = inspectionId;
+    syncWorkspaceSelection(asset.id, inspectionId);
+    analysisCompareMode = mode;
+    syncAnalysisCompareState(true);
+    renderWorkspace();
+    goPage('profile');
+    window.setTimeout(() => el('analysisComparePanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+  }
+
   function guessMeasurementMimeType(name = '') {
     const lower = trimText(name).toLowerCase();
     if (lower.endsWith('.csv') || lower.endsWith('.txt') || lower.endsWith('.tsv') || lower.endsWith('.dat')) return 'text/plain';
@@ -2780,6 +3062,49 @@ const App = (() => {
       if (action === 'asset') {
         const assetId = getMeasurementById(measurementId)?.assetId;
         if (assetId) openAssetPage(assetId);
+      }
+    });
+    el('profileAlertList')?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-profile-alert-action][data-asset-id]');
+      if (!button) return;
+      const assetId = button.dataset.assetId;
+      const inspectionId = button.dataset.inspectionId || null;
+      const measurementId = button.dataset.measurementId || null;
+      const action = button.dataset.profileAlertAction;
+      if (action === 'open-journal') {
+        focusProfileAsset(assetId, 'journalPanel');
+        return;
+      }
+      if (action === 'open-monitoring') {
+        focusProfileAsset(assetId, 'monitoringList');
+        return;
+      }
+      if (action === 'open-compare') {
+        focusProfileCompare(assetId, 'baseline_saved', inspectionId);
+        return;
+      }
+      if (action === 'prepare-repair') {
+        selectedAssetId = assetId;
+        analysisCompareAssetId = assetId;
+        syncWorkspaceSelection(assetId, inspectionId);
+        prepareAssetTransition('service', 'repair');
+        return;
+      }
+      if (action === 'prepare-after') {
+        selectedAssetId = assetId;
+        analysisCompareAssetId = assetId;
+        syncWorkspaceSelection(assetId, inspectionId);
+        prepareAssetTransition('after_maintenance', 'replaced');
+        return;
+      }
+      if (action === 'set-baseline' && inspectionId) {
+        setBaselineInspection(inspectionId).catch((e) => {
+          toast('Не удалось назначить baseline', e.message || 'Ошибка при обновлении эталонного сеанса.', 'error');
+        });
+        return;
+      }
+      if (action === 'open-measurement' && measurementId) {
+        openMeasurementInAnalysis(measurementId);
       }
     });
     ['assetNameInput', 'sessionNoteInput', 'engineerReasonInput', 'actionTakenInput'].forEach((id) => {

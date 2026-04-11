@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#060a12">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>Vibro — Система вибродиагностики</title>
-  <link rel="stylesheet" href="css/style.css?v=20260411-nav-ux-11">
+  <link rel="stylesheet" href="css/style.css?v=20260411-profile-health-alerts-13">
 </head>
 <body data-mode="defense">
 <a href="#page-home" class="skip-link">Перейти к содержанию</a>
@@ -823,14 +823,46 @@
       <div class="page-compass">
         <div class="page-compass-copy">
           <div class="page-compass-kicker">ЧТО ДЕЛАТЬ ЗДЕСЬ</div>
-          <div class="page-compass-title">Профиль хранит личный рабочий контур после анализа</div>
-          <div class="page-compass-note">Сначала войдите в аккаунт, затем сохраняйте сеансы, сравнивайте базовый и текущий сценарий, оставляйте комментарии инженера и управляйте серверными измерениями.</div>
+          <div class="page-compass-title">Профиль собирает health overview, alert-ы и рабочий контур после анализа</div>
+          <div class="page-compass-note">Сначала посмотрите, какие узлы требуют внимания, затем войдите в аккаунт, сохраняйте сеансы, сравнивайте baseline и текущие записи, оставляйте комментарии инженера и управляйте серверными измерениями.</div>
         </div>
         <div class="page-compass-links">
-          <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('profile','authPanel')">АККАУНТ</button>
+          <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('profile','profileHealthPanel')">ОБЗОР</button>
+          <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','authPanel')">АККАУНТ</button>
           <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','journalPanel')">ЖУРНАЛ</button>
           <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','analysisComparePanel')">СРАВНЕНИЕ</button>
           <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','monitoringList')">МОНИТОРИНГ</button>
+        </div>
+      </div>
+
+      <div class="profile-health-shell" id="profileHealthPanel">
+        <div class="workspace-panel workspace-panel--profile-health">
+          <div class="workspace-panel-head">
+            <div>
+              <div class="card-title">СОСТОЯНИЕ СИСТЕМЫ</div>
+              <p class="workspace-copy">
+                Быстрый свод по сохранённым узлам: средний health score, объекты с повышенным риском, записи после обслуживания и текущие monitoring-сигналы.
+              </p>
+            </div>
+            <span class="workspace-badge">HEALTH</span>
+          </div>
+          <div class="profile-health-summary" id="profileHealthSummary"></div>
+        </div>
+
+        <div class="workspace-panel workspace-panel--profile-alerts">
+          <div class="workspace-panel-head">
+            <div>
+              <div class="card-title">ЧТО ТРЕБУЕТ ВНИМАНИЯ</div>
+              <p class="workspace-copy">
+                Приоритетные alert-ы подсказывают, какой узел открыть в журнале, что сравнить с baseline и где нужен следующий шаг по обслуживанию.
+              </p>
+            </div>
+            <span class="workspace-badge">ALERTS</span>
+          </div>
+          <div class="workspace-empty" id="profileAlertEmpty">
+            После входа и сохранения сеансов здесь появятся приоритетные узлы, новые raw-измерения и рекомендации по следующему действию.
+          </div>
+          <div class="profile-alert-list" id="profileAlertList"></div>
         </div>
       </div>
 
@@ -1446,7 +1478,7 @@
 <script src="js/converter.js?v=20260411-upload-window-fix-9"></script>
 <script src="js/sensor.js?v=20260410-fft-fix"></script>
 <script src="js/viz.js?v=20260410-fft-fix"></script>
-<script src="js/app.js?v=20260411-demo-simplify-12"></script>
+<script src="js/app.js?v=20260411-profile-health-alerts-13"></script>
 <!-- Notification toast container -->
 <div id="toastContainer" class="toast-container"></div>
 </body>

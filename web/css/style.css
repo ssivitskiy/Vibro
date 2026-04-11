@@ -2393,6 +2393,178 @@ textarea:focus-visible {
   margin-top:18px;
 }
 
+.profile-health-shell {
+  display:grid;
+  grid-template-columns:minmax(0, 1.15fr) minmax(320px, 0.85fr);
+  gap:18px;
+  margin-bottom:18px;
+}
+
+.profile-health-summary {
+  margin-top:18px;
+}
+
+.profile-health-grid {
+  display:grid;
+  grid-template-columns:repeat(3, minmax(0, 1fr));
+  gap:12px;
+}
+
+.profile-health-card {
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,0.06);
+  background:rgba(255,255,255,0.03);
+  padding:14px;
+}
+
+.profile-health-card span {
+  display:block;
+  font-family:var(--mono);
+  font-size:9px;
+  letter-spacing:1.5px;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+
+.profile-health-card strong {
+  display:block;
+  margin-top:8px;
+  color:#fff;
+  font-size:24px;
+  line-height:1.1;
+}
+
+.profile-health-card small {
+  display:block;
+  margin-top:8px;
+  color:#96a6b9;
+  font-size:12px;
+  line-height:1.55;
+}
+
+.profile-health-card--good {
+  border-color:rgba(52,211,153,0.22);
+  background:rgba(52,211,153,0.08);
+}
+
+.profile-health-card--info {
+  border-color:rgba(0,229,255,0.22);
+  background:rgba(0,229,255,0.07);
+}
+
+.profile-health-card--warning {
+  border-color:rgba(251,191,36,0.22);
+  background:rgba(251,191,36,0.08);
+}
+
+.profile-health-card--critical {
+  border-color:rgba(248,113,113,0.22);
+  background:rgba(248,113,113,0.08);
+}
+
+.profile-health-focus {
+  display:grid;
+  grid-template-columns:minmax(0, 1fr) minmax(180px, 240px);
+  gap:14px;
+  margin-top:14px;
+  border-radius:22px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:linear-gradient(180deg, rgba(15,20,30,0.94), rgba(9,13,21,0.92));
+  padding:18px;
+}
+
+.profile-health-focus-kicker {
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:1.7px;
+  color:var(--muted);
+  text-transform:uppercase;
+}
+
+.profile-health-focus-title {
+  margin-top:8px;
+  color:#fff;
+  font-size:20px;
+  line-height:1.3;
+}
+
+.profile-health-focus-note {
+  margin-top:10px;
+  color:#afbdd0;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.profile-health-focus-chart {
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,0.06);
+  background:rgba(255,255,255,0.03);
+  padding:10px 12px;
+  min-height:88px;
+}
+
+.profile-alert-list {
+  display:grid;
+  gap:12px;
+  margin-top:16px;
+}
+
+.profile-alert-item {
+  border-radius:20px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:linear-gradient(180deg, rgba(15,20,30,0.95), rgba(9,13,21,0.92));
+  padding:16px;
+}
+
+.profile-alert-item--critical {
+  border-color:rgba(248,113,113,0.24);
+  box-shadow:0 0 0 1px rgba(248,113,113,0.08);
+}
+
+.profile-alert-item--warning {
+  border-color:rgba(251,191,36,0.22);
+  box-shadow:0 0 0 1px rgba(251,191,36,0.06);
+}
+
+.profile-alert-item--info {
+  border-color:rgba(0,229,255,0.2);
+  box-shadow:0 0 0 1px rgba(0,229,255,0.06);
+}
+
+.profile-alert-head {
+  display:flex;
+  justify-content:space-between;
+  gap:14px;
+  align-items:flex-start;
+}
+
+.profile-alert-title {
+  color:#fff;
+  font-size:16px;
+  line-height:1.4;
+}
+
+.profile-alert-copy {
+  margin-top:6px;
+  color:#aebdd1;
+  font-size:13px;
+  line-height:1.65;
+}
+
+.profile-alert-note {
+  margin-top:12px;
+  color:#c7d2df;
+  font-size:13px;
+  line-height:1.7;
+}
+
+.profile-alert-actions {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+
 .history-list {
   display:grid;
   gap:12px;
@@ -3545,6 +3717,7 @@ textarea:focus-visible {
   .thesis-grid,
   .diag-launchpad,
   .page-compass,
+  .profile-health-shell,
   .assets-hero,
   .fleet-layout,
   .workspace-grid,
@@ -3552,6 +3725,7 @@ textarea:focus-visible {
   .diag-tools-grid,
   .analysis-compare-metrics,
   .asset-trend-hero,
+  .profile-health-focus,
   .diag-shell,
   .diag-story-grid,
   .diag-evidence,
@@ -3610,6 +3784,7 @@ textarea:focus-visible {
   .sales-steps,
   .script-grid,
   .thesis-grid,
+  .profile-health-grid,
   .fault-btns,
   .analysis-compare-metrics,
   .asset-fleet-grid,
@@ -3636,6 +3811,10 @@ textarea:focus-visible {
   }
 
   .analysis-compare-header {
+    flex-direction:column;
+  }
+
+  .profile-alert-head {
     flex-direction:column;
   }
 
