@@ -57,6 +57,13 @@ cd ~/vibro
 bash scripts/backup_runtime.sh ~/vibro
 ```
 
+Ручной backup SQLite:
+
+```bash
+cd ~/vibro
+bash scripts/backup_database.sh ~/vibro
+```
+
 Ручной rollback на предыдущую ревизию:
 
 ```bash
@@ -78,8 +85,16 @@ cd ~/vibro
 bash scripts/restore_runtime_backup.sh ~/vibro /root/vibro_backups/<archive>.tgz
 ```
 
+Восстановление SQLite из отдельного backup:
+
+```bash
+cd ~/vibro
+bash scripts/restore_database_backup.sh ~/vibro /root/vibro_db_backups/<backup>.sqlite3
+```
+
 ## Где лежат служебные артефакты
 
 - runtime backup archives: `/root/vibro_backups`
+- database backup archives: `/root/vibro_db_backups`
 - deploy logs: `runtime/infra/logs/deploy.log`
 - deploy history: `runtime/infra/logs/deploy-history.log`

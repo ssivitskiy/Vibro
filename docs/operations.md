@@ -14,12 +14,21 @@
 - `runtime/` архивируется в `/root/vibro_backups`
 - retention по умолчанию: `14` дней
 - имя архива содержит UTC timestamp и commit SHA
+- SQLite архивируется отдельно в `/root/vibro_db_backups`
+- retention по умолчанию: `30` дней
 
 Ручной запуск:
 
 ```bash
 cd ~/vibro
 bash scripts/backup_runtime.sh ~/vibro
+```
+
+Отдельный backup базы:
+
+```bash
+cd ~/vibro
+bash scripts/backup_database.sh ~/vibro
 ```
 
 ## Restore policy
@@ -31,14 +40,22 @@ cd ~/vibro
 bash scripts/restore_runtime_backup.sh ~/vibro /root/vibro_backups/<archive>.tgz
 ```
 
+Восстановление базы:
+
+```bash
+cd ~/vibro
+bash scripts/restore_database_backup.sh ~/vibro /root/vibro_db_backups/<backup>.sqlite3
+```
+
 ## Rollback policy
 
 Если deploy не проходит healthcheck, `deploy_server.sh`:
 
 1. сохраняет backup runtime,
-2. откатывает код на предыдущий commit,
-3. пересобирает `web`,
-4. пишет событие в `deploy-history.log`.
+2. сохраняет отдельный backup SQLite,
+3. откатывает код на предыдущий commit,
+4. пересобирает `web`,
+5. пишет событие в `deploy-history.log`.
 
 Ручной rollback:
 
@@ -62,3 +79,20 @@ bash scripts/rollback_release.sh ~/vibro
 ```cron
 17 3 * * * cd /root/vibro && BACKUP_DIR=/root/vibro_backups BACKUP_RETENTION_DAYS=14 bash scripts/backup_runtime.sh /root/vibro >> /root/vibro/runtime/infra/logs/backup.log 2>&1
 ```
+
+Ежедневный backup SQLite в `03:27 UTC`:
+
+```cron
+27 3 * * * cd /root/vibro && DB_BACKUP_DIR=/root/vibro_db_backups DB_BACKUP_RETENTION_DAYS=30 bash scripts/backup_database.sh /root/vibro >> /root/vibro/runtime/infra/logs/db-backup.log 2>&1
+```
+
+## HTTPS-ready mode
+
+В репозитории подготовлены:
+
+- [`infra/Caddyfile`](../infra/Caddyfile)
+- [`docker-compose.https.yml`](../docker-compose.https.yml)
+
+Это позволяет включить browser-trusted HTTPS через Caddy и Let's Encrypt, когда у проекта появится рабочий домен с корректным DNS.
+
+На текущем bare IP-адресе `185.239.50.243` полноценный публичный HTTPS-сертификат не настраивается так же надёжно, как на домене, поэтому live сейчас остаётся на HTTP по IP.
