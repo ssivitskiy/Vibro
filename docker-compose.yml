@@ -15,6 +15,17 @@ services:
       - ./runtime:/app/runtime
       - ./python/backend:/app/python/backend:ro
     command: uvicorn backend.main:app --app-dir python --host 0.0.0.0 --port 8000
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"from urllib.request import urlopen; import sys; sys.exit(0 if urlopen('http://127.0.0.1:8000/api/health').status == 200 else 1)\""]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
   # ═══ Training ═══
   # Usage: docker compose run train

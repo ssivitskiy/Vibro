@@ -67,6 +67,7 @@ pip install -e ".[advanced,dev]"
 ```
 
 Автодеплой на сервер через GitHub Actions описан в [`docs/server-deploy.md`](./docs/server-deploy.md).
+Операционные процедуры для backup / restore / rollback описаны в [`docs/operations.md`](./docs/operations.md).
 
 ## Структура проекта
 
