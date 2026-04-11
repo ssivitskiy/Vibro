@@ -1,0 +1,39 @@
+services:
+  # ═══ Web Dashboard ═══
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.web
+    restart: unless-stopped
+    ports:
+      - "${VIBRO_PORT:-80}:8000"
+    environment:
+      VIBRO_ALLOW_ORIGINS: "${VIBRO_ALLOW_ORIGINS:-http://185.239.50.243,http://localhost:8000,http://localhost:8080}"
+      VIBRO_SECURE_COOKIES: "${VIBRO_SECURE_COOKIES:-0}"
+    volumes:
+      - ./web:/app/web:ro
+      - ./runtime:/app/runtime
+      - ./python/backend:/app/python/backend:ro
+    command: uvicorn backend.main:app --app-dir python --host 0.0.0.0 --port 8000
+
+  # ═══ Training ═══
+  # Usage: docker compose run train
+  train:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ./python/data:/app/python/data:ro    # SEU files
+      - ./python/models:/app/python/models    # output models
+      - ./web/model:/app/web/model            # exported JSON
+    command: sh -c "cd python && python train.py data/ && python export_model.py"
+    profiles: ["train"]
+
+  # ═══ Tests ═══
+  # Usage: docker compose run test
+  test:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command: python -m pytest tests/ -v --tb=short
+    profiles: ["test"]
