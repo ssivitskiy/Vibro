@@ -17,6 +17,7 @@ const App = (() => {
   let alertRegistry = [];
   let alertEventRegistry = {};
   let selectedAlertId = null;
+  let alertStatusFilter = 'all';
   let apiReady = false;
   let dashboardSummary = null;
   let selectedAssetId = null;
@@ -550,6 +551,32 @@ const App = (() => {
       resolved: 'acknowledged',
     };
     return map[trimText(status)] || 'acknowledged';
+  }
+
+  function getAlertStatusCounts(alerts) {
+    const counts = {
+      all: alerts.length,
+      active: 0,
+      new: 0,
+      acknowledged: 0,
+      in_progress: 0,
+      resolved: 0,
+    };
+    alerts.forEach((alert) => {
+      const status = trimText(alert.status);
+      if (status !== 'resolved') counts.active += 1;
+      if (Object.prototype.hasOwnProperty.call(counts, status)) {
+        counts[status] += 1;
+      }
+    });
+    return counts;
+  }
+
+  function matchesAlertFilter(alert, filterValue) {
+    const status = trimText(alert.status);
+    if (filterValue === 'all') return true;
+    if (filterValue === 'active') return status !== 'resolved';
+    return status === filterValue;
   }
 
   function getAlertById(alertId) {
@@ -1090,10 +1117,14 @@ const App = (() => {
     const summaryNode = el('profileHealthSummary');
     const alertListNode = el('profileAlertList');
     const alertEmptyNode = el('profileAlertEmpty');
-    if (!summaryNode || !alertListNode || !alertEmptyNode) return;
+    const alertStatusNode = el('profileAlertStatusSummary');
+    const alertFilterNode = el('profileAlertFilterRow');
+    if (!summaryNode || !alertListNode || !alertEmptyNode || !alertStatusNode || !alertFilterNode) return;
 
     if (!apiReady) {
       summaryNode.innerHTML = `<div class="workspace-empty-block">Backend недоступен. После запуска API здесь появятся health score, alert-ы и сводка по сохранённым узлам.</div>`;
+      alertStatusNode.innerHTML = '';
+      alertFilterNode.style.display = 'none';
       alertEmptyNode.style.display = 'block';
       alertEmptyNode.textContent = 'Alert-лента появится после запуска серверного контура.';
       alertListNode.innerHTML = '';
@@ -1102,6 +1133,8 @@ const App = (() => {
 
     if (!authState?.id) {
       summaryNode.innerHTML = `<div class="workspace-empty-block">Войдите в аккаунт, чтобы видеть здоровье узлов, приоритетные alert-ы и сохранённую историю по оборудованию.</div>`;
+      alertStatusNode.innerHTML = '';
+      alertFilterNode.style.display = 'none';
       alertEmptyNode.style.display = 'block';
       alertEmptyNode.textContent = 'После входа здесь появятся узлы, требующие внимания, и рекомендации по следующему действию.';
       alertListNode.innerHTML = '';
@@ -1111,6 +1144,8 @@ const App = (() => {
     const overviews = getPriorityAssetOverviews();
     if (!overviews.length) {
       summaryNode.innerHTML = `<div class="workspace-empty-block">Сохраните первый серверный сеанс, и профиль начнёт считать health score, отслеживать деградацию и выделять важные кейсы.</div>`;
+      alertStatusNode.innerHTML = '';
+      alertFilterNode.style.display = 'none';
       alertEmptyNode.style.display = 'block';
       alertEmptyNode.textContent = 'Alert-лента появится после первой сохранённой записи.';
       alertListNode.innerHTML = '';
@@ -1187,9 +1222,33 @@ const App = (() => {
     });
 
     if (serverAlerts.length) {
+      const counts = getAlertStatusCounts(serverAlerts);
+      alertFilterNode.style.display = 'flex';
+      alertStatusNode.innerHTML = `
+        <span class="workspace-stat-pill">${counts.all} всего</span>
+        <span class="workspace-stat-pill">${counts.active} активных</span>
+        <span class="workspace-stat-pill">${counts.new} new</span>
+        <span class="workspace-stat-pill">${counts.acknowledged} acknowledged</span>
+        <span class="workspace-stat-pill">${counts.in_progress} in progress</span>
+        <span class="workspace-stat-pill">${counts.resolved} resolved</span>
+      `;
+      alertFilterNode.querySelectorAll('[data-alert-filter]').forEach((button) => {
+        button.classList.toggle('is-active', button.dataset.alertFilter === alertStatusFilter);
+      });
+      const filteredAlerts = serverAlerts.filter((alert) => matchesAlertFilter(alert, alertStatusFilter));
+      if (!filteredAlerts.length) {
+        selectedAlertId = null;
+        alertEmptyNode.style.display = 'block';
+        alertEmptyNode.textContent = `Для фильтра "${alertStatusFilter}" alert-ов сейчас нет.`;
+        alertListNode.innerHTML = '';
+        return;
+      }
       if (!getAlertById(selectedAlertId)) selectedAlertId = serverAlerts[0].id;
+      if (!filteredAlerts.some((item) => item.id === selectedAlertId)) {
+        selectedAlertId = filteredAlerts[0].id;
+      }
       alertEmptyNode.style.display = 'none';
-      alertListNode.innerHTML = serverAlerts.slice(0, 6).map((alert) => {
+      alertListNode.innerHTML = filteredAlerts.slice(0, 6).map((alert) => {
         const statusMeta = getAlertStatusMeta(alert.status);
         const severityTone = getAlertSeverityTone(alert.severity);
         const nextStatus = getAlertNextStatus(alert.status);
@@ -1222,6 +1281,9 @@ const App = (() => {
       return;
     }
 
+    alertStatusNode.innerHTML = '';
+    alertFilterNode.style.display = 'none';
+    selectedAlertId = null;
     const alerts = overviews
       .map(buildProfileAlert)
       .filter(Boolean)
@@ -3418,6 +3480,13 @@ const App = (() => {
       if (action === 'open-measurement' && measurementId) {
         openMeasurementInAnalysis(measurementId);
       }
+    });
+    el('profileAlertFilterRow')?.addEventListener('click', (event) => {
+      const button = event.target.closest('[data-alert-filter]');
+      if (!button) return;
+      alertStatusFilter = button.dataset.alertFilter || 'all';
+      renderProfileHealthOverview();
+      renderAlertLifecyclePanel();
     });
     el('alertEventTypeInput')?.addEventListener('change', (event) => {
       const nextNode = el('alertNextStatusInput');

@@ -2509,6 +2509,23 @@ textarea:focus-visible {
   margin-top:16px;
 }
 
+.profile-alert-toolbar {
+  margin-top:18px;
+}
+
+.profile-alert-filter-row {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:10px;
+}
+
+.profile-alert-filter-row .history-btn.is-active {
+  border-color:rgba(0,229,255,0.24);
+  background:rgba(0,229,255,0.1);
+  color:#eff9ff;
+}
+
 .profile-alert-item {
   border-radius:20px;
   border:1px solid rgba(255,255,255,0.08);
@@ -3903,6 +3920,10 @@ textarea:focus-visible {
   }
 
   .profile-alert-head {
+    flex-direction:column;
+  }
+
+  .profile-alert-filter-row {
     flex-direction:column;
   }
 
