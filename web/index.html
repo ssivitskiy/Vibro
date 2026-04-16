@@ -13,10 +13,11 @@
   <meta name="theme-color" content="#060a12">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>Vibro — Система вибродиагностики</title>
-  <link rel="stylesheet" href="css/style.css?v=20260416-alert-sort-15">
+  <link rel="stylesheet" href="css/style.css?v=20260416-frontier-ui-16">
 </head>
 <body data-mode="defense">
 <a href="#page-home" class="skip-link">Перейти к содержанию</a>
+<div class="app-progress" aria-hidden="true"><span id="appProgressBar"></span></div>
 
 <header class="header" role="banner">
   <div class="logo">VIBRO</div>
@@ -97,6 +98,23 @@
           <div class="hero-trust-item">До 80% отказов вращающегося оборудования связаны с подшипниками и зубчатыми передачами</div>
           <div class="hero-trust-item">Модель показывает 98.4% accuracy на 9 классах реальных дефектов</div>
           <div class="hero-trust-item">Весь диагностический контур доступен через браузер без серверного ML</div>
+        </div>
+        <div class="hero-command-grid">
+          <div class="hero-command-card">
+            <span class="hero-command-label">Inference contour</span>
+            <strong>Browser-side ML</strong>
+            <p>Классификация, признаки и визуализация работают прямо в клиенте без серверного ML-контура.</p>
+          </div>
+          <div class="hero-command-card">
+            <span class="hero-command-label">Production state</span>
+            <strong>Live + auto deploy</strong>
+            <p>Сервис уже развернут, обновляется из GitHub и готов к реальной демонстрации в браузере.</p>
+          </div>
+          <div class="hero-command-card">
+            <span class="hero-command-label">Engineering focus</span>
+            <strong>Explainable diagnosis</strong>
+            <p>Сигнал, FFT, compare mode и 3D-симулятор связаны в единый рабочий контур для инженера.</p>
+          </div>
         </div>
       </div>
 
@@ -1552,7 +1570,7 @@
 <script src="js/converter.js?v=20260411-upload-window-fix-9"></script>
 <script src="js/sensor.js?v=20260410-fft-fix"></script>
 <script src="js/viz.js?v=20260410-fft-fix"></script>
-<script src="js/app.js?v=20260416-alert-sort-15"></script>
+<script src="js/app.js?v=20260416-frontier-ui-16"></script>
 <!-- Notification toast container -->
 <div id="toastContainer" class="toast-container"></div>
 </body>

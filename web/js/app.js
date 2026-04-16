@@ -33,7 +33,7 @@ const App = (() => {
   let assetStatusFilter = 'all';
   let assetRiskFilter = 'all';
   let assetSortMode = 'priority';
-  const ASSET_VERSION = '20260416-alert-sort-15';
+  const ASSET_VERSION = '20260416-frontier-ui-16';
   const STORAGE_KEYS = {
     legacyAuth: 'vm_local_auth_v1',
     legacySessions: 'vm_local_sessions_v1',
@@ -3751,17 +3751,23 @@ const App = (() => {
     const targets = [
       '.hero-copy',
       '.hero-stage',
+      '.hero-command-card',
       '.sales-strip',
       '.metric-card',
       '.fault-card',
       '.diag-lead',
       '.diag-presets',
+      '.page-compass',
+      '.preset-card',
       '.upload-zone',
       '.sensor-panel',
       '.fault-btn',
       '.analysis-compare-panel',
+      '.analysis-compare-summary',
       '.signal-box',
       '.card',
+      '.workspace-panel',
+      '.profile-alert-item',
       '.assets-hero-copy',
       '.assets-hero-metrics',
       '.asset-fleet-card',
@@ -3791,16 +3797,28 @@ const App = (() => {
   }
 
   // ═══ NAV ═══
+  function updateViewportChrome() {
+    const progressNode = el('appProgressBar');
+    if (progressNode) {
+      const root = document.documentElement;
+      const maxScroll = Math.max(1, root.scrollHeight - window.innerHeight);
+      const ratio = Math.max(0.04, Math.min(1, (window.scrollY || root.scrollTop || 0) / maxScroll));
+      progressNode.style.transform = `scaleX(${ratio})`;
+    }
+  }
+
   function goPage(id) {
     ['home', 'diag', 'profile', 'assets'].forEach(p => {
       const e = el('page-'+p); if(e) e.style.display = p===id ? 'block' : 'none';
     });
+    document.body.dataset.page = id;
     document.querySelectorAll('.nav-btn').forEach(b => {
       const isActive = b.dataset.page===id;
       b.classList.toggle('active', isActive);
       if(isActive) b.setAttribute('aria-current','page'); else b.removeAttribute('aria-current');
     });
     window.scrollTo({top:0,behavior:'smooth'});
+    window.setTimeout(updateViewportChrome, 80);
   }
 
   function goHomeSection(sectionId) {
@@ -4760,6 +4778,9 @@ const App = (() => {
     buildModel();
     setupScenarioLinks();
     initRevealSystem();
+    updateViewportChrome();
+    window.addEventListener('scroll', updateViewportChrome, { passive: true });
+    window.addEventListener('resize', updateViewportChrome);
     if (typeof DemoCases !== 'undefined') {
       await DemoCases.load(`model/demo_cases.json?v=${ASSET_VERSION}`);
     }
