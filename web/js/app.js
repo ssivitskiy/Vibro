@@ -33,7 +33,7 @@ const App = (() => {
   let assetStatusFilter = 'all';
   let assetRiskFilter = 'all';
   let assetSortMode = 'priority';
-  const ASSET_VERSION = '20260416-cinematic-profile-17';
+  const ASSET_VERSION = '20260417-product-copy-18';
   const STORAGE_KEYS = {
     legacyAuth: 'vm_local_auth_v1',
     legacySessions: 'vm_local_sessions_v1',
@@ -169,7 +169,7 @@ const App = (() => {
       severity: 'Комплексный риск',
       action: 'Эскалировать кейс инженеру-диагносту: вероятно развивается несколько повреждений одновременно.',
       reason: 'В сигнале и спектре наложены несколько характерных паттернов, что увеличивает неопределённость и риск.',
-      short: 'Сильный сценарий для разговора о сложных и дорогостоящих поломках.',
+      short: 'Показывает сложный случай, где в сигнале одновременно проявляются несколько механизмов деградации.',
       priority: 'Расширенная диагностика узла',
     },
   };
@@ -980,12 +980,12 @@ const App = (() => {
         measurementId: latestMeasurement.id,
         tone: 'info',
         priority: 66,
-        badge: 'Raw data',
+        badge: 'Измерения',
         title: `${overview.asset.name}: есть новые измерения`,
-        summary: `${unlinkedMeasurements} raw-запис${unlinkedMeasurements === 1 ? 'ь' : 'и'} без связанной inspection в истории.`,
+        summary: `${unlinkedMeasurements} запис${unlinkedMeasurements === 1 ? 'ь' : 'и'} без связанного сеанса в истории.`,
         note: latestMeasurement.originalName || 'Откройте последнее измерение на странице анализа и при необходимости сохраните его как новый сеанс.',
         primaryAction: { type: 'open-measurement', label: 'ОТКРЫТЬ В АНАЛИЗЕ' },
-        secondaryAction: { type: 'open-monitoring', label: 'К МОНИТОРИНГУ' },
+        secondaryAction: { type: 'open-monitoring', label: 'К ИЗМЕРЕНИЯМ' },
       };
     }
 
@@ -1388,7 +1388,7 @@ const App = (() => {
     if (!apiReady || !authState?.id) {
       form.style.display = 'none';
       emptyNode.style.display = 'block';
-      emptyNode.textContent = 'Войдите в аккаунт, чтобы вести lifecycle alert-ов и журнал действий.';
+      emptyNode.textContent = 'Войдите в аккаунт, чтобы управлять alert-ами и сохранять историю действий.';
       summaryNode.innerHTML = '';
       listNode.innerHTML = '';
       return;
@@ -1398,7 +1398,7 @@ const App = (() => {
     if (!alert) {
       form.style.display = 'none';
       emptyNode.style.display = 'block';
-      emptyNode.textContent = 'Выберите alert из списка выше, чтобы увидеть его lifecycle и историю действий.';
+      emptyNode.textContent = 'Выберите alert из списка выше, чтобы увидеть его текущий статус и историю действий.';
       summaryNode.innerHTML = '';
       listNode.innerHTML = '';
       return;
@@ -1410,7 +1410,7 @@ const App = (() => {
     const events = alertEventRegistry[alert.id] || [];
     form.style.display = 'block';
     emptyNode.style.display = events.length ? 'none' : 'block';
-    emptyNode.textContent = 'По этому alert-у пока нет action log. Сохраните первое инженерное событие ниже.';
+    emptyNode.textContent = 'По этому alert-у пока нет сохранённых действий. Добавьте первое инженерное событие ниже.';
     submitBtn.disabled = false;
     compareBtn.disabled = !alert.inspectionId;
     journalBtn.disabled = false;
@@ -1579,7 +1579,7 @@ const App = (() => {
 
     const targetOptions = [];
     if (currentMatchesAsset) {
-      targetOptions.push(`<option value="__current">Текущий анализ · ${escapeHtml(currentSnapshot.input?.label || 'Текущий сценарий')}</option>`);
+      targetOptions.push(`<option value="__current">Текущий анализ · ${escapeHtml(currentSnapshot.input?.label || 'Текущий кейс')}</option>`);
     }
     targetOptions.push(...sessions.map((item) => `<option value="${escapeHtml(item.id)}">${escapeHtml(buildSessionOptionLabel(item))}</option>`));
     targetSelect.innerHTML = targetOptions.join('') || '<option value="">Нет сеансов</option>';
@@ -2051,7 +2051,7 @@ const App = (() => {
       },
       ball_fault: {
         title: 'Bearing pattern в зоне BSF',
-        note: 'Нужно смотреть не на GMF, а на BSF и его гармоники. Это помогает жюри сразу увидеть разницу между gear и bearing сценарием.',
+        note: 'Нужно смотреть не на GMF, а на BSF и его гармоники. Это позволяет быстро отличить подшипниковый паттерн от дефекта зубчатой передачи.',
       },
       inner_race: {
         title: 'Bearing pattern в зоне BPFI',
@@ -2062,7 +2062,7 @@ const App = (() => {
         note: 'Наружная обойма чаще даёт устойчивый повторяющийся рисунок около BPFO. Это хороший кейс для объяснения локализации дефекта по спектру.',
       },
       combination: {
-        title: 'Смешанный спектральный сценарий',
+        title: 'Смешанный спектральный паттерн',
         note: 'Комбинированный случай показывает, что модель различает не один признак, а суперпозицию нескольких механизмов деградации сразу.',
       },
     };
@@ -2830,7 +2830,7 @@ const App = (() => {
     try {
       await loadAlertEvents(alertId, { force });
     } catch (e) {
-      toast('Не удалось загрузить log', e.message || 'Ошибка при загрузке action log.', 'warning');
+      toast('Не удалось загрузить журнал', e.message || 'Ошибка при загрузке истории действий.', 'warning');
     }
     renderWorkspace();
     if (scroll) {
@@ -2839,9 +2839,9 @@ const App = (() => {
     }
   }
 
-  async function saveAlertEvent(alertId, payload, successMessage = 'Lifecycle обновлён') {
+  async function saveAlertEvent(alertId, payload, successMessage = 'Статус alert-а обновлён') {
     if (!apiReady || !authState?.id) {
-      toast('Нужен вход', 'Alert lifecycle работает только в серверном кабинете.', 'warning');
+      toast('Нужен вход', 'Управление alert-ами доступно только в серверном кабинете.', 'warning');
       return null;
     }
     const updated = await apiRequest(`/alerts/${alertId}/events`, {
@@ -3217,7 +3217,7 @@ const App = (() => {
       return false;
     }
     if (!currentDiagnosis) {
-      toast('Нет активного анализа', 'Сначала выполните анализ сигнала или запустите demo-сценарий.', 'warning');
+      toast('Нет активного анализа', 'Сначала выполните анализ сигнала или откройте готовый кейс.', 'warning');
       return false;
     }
 
@@ -3498,7 +3498,7 @@ const App = (() => {
           event_type: 'status_change',
           next_status: nextStatus,
           message: `Статус alert-а переведён в ${nextMeta.label}.`,
-        }, 'Lifecycle обновлён').catch((e) => {
+        }, 'Статус alert-а обновлён').catch((e) => {
           toast('Не удалось обновить alert', e.message || 'Ошибка при обновлении статуса alert-а.', 'error');
         });
         return;
@@ -3576,7 +3576,7 @@ const App = (() => {
       }, 'Событие сохранено').then(() => {
         if (el('alertEventMessageInput')) el('alertEventMessageInput').value = '';
       }).catch((e) => {
-        toast('Не удалось сохранить событие', e.message || 'Ошибка при записи lifecycle-события.', 'error');
+        toast('Не удалось сохранить событие', e.message || 'Ошибка при записи действия по alert-у.', 'error');
       });
     });
     el('alertOpenCompareBtn')?.addEventListener('click', () => {
@@ -4469,7 +4469,7 @@ const App = (() => {
   let sensorStream = null, sensorConnected = false;
 
   function initSensorUI() {
-    if (document.body?.dataset?.mode === 'defense') return;
+    if (document.body?.dataset?.mode !== 'lab') return;
     const zone = el('uploadZone');
     if (!zone || !zone.parentNode) return;
     // Don't add twice
