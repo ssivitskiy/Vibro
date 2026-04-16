@@ -2513,6 +2513,26 @@ textarea:focus-visible {
   margin-top:18px;
 }
 
+.profile-alert-toolbar-head {
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:14px;
+  flex-wrap:wrap;
+}
+
+.profile-alert-status-row {
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  flex:1 1 440px;
+}
+
+.profile-alert-sort-field {
+  min-width:220px;
+  max-width:260px;
+}
+
 .profile-alert-filter-row {
   display:flex;
   gap:8px;
@@ -3923,8 +3943,10 @@ textarea:focus-visible {
     flex-direction:column;
   }
 
+  .profile-alert-toolbar-head,
   .profile-alert-filter-row {
     flex-direction:column;
+    align-items:stretch;
   }
 
   .profile-alert-log-head,

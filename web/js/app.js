@@ -18,6 +18,7 @@ const App = (() => {
   let alertEventRegistry = {};
   let selectedAlertId = null;
   let alertStatusFilter = 'all';
+  let alertSortMode = 'priority';
   let apiReady = false;
   let dashboardSummary = null;
   let selectedAssetId = null;
@@ -32,7 +33,7 @@ const App = (() => {
   let assetStatusFilter = 'all';
   let assetRiskFilter = 'all';
   let assetSortMode = 'priority';
-  const ASSET_VERSION = '20260416-alert-lifecycle-14';
+  const ASSET_VERSION = '20260416-alert-sort-15';
   const STORAGE_KEYS = {
     legacyAuth: 'vm_local_auth_v1',
     legacySessions: 'vm_local_sessions_v1',
@@ -76,6 +77,18 @@ const App = (() => {
     acknowledged: { label: 'Acknowledged', tone: 'warning', note: 'Alert подтверждён и ожидает инженерного действия.' },
     in_progress: { label: 'In progress', tone: 'info', note: 'По alert-у уже идёт работа или ремонтный цикл.' },
     resolved: { label: 'Resolved', tone: 'good', note: 'Alert закрыт после выполненного действия или контрольной записи.' },
+  };
+  const ALERT_SEVERITY_ORDER = {
+    low: 1,
+    medium: 2,
+    high: 3,
+    critical: 4,
+  };
+  const ALERT_STATUS_ORDER = {
+    resolved: 1,
+    in_progress: 2,
+    acknowledged: 3,
+    new: 4,
   };
   const PLAYBOOK = {
     normal: {
@@ -577,6 +590,49 @@ const App = (() => {
     if (filterValue === 'all') return true;
     if (filterValue === 'active') return status !== 'resolved';
     return status === filterValue;
+  }
+
+  function getAlertFreshnessStamp(alert) {
+    return new Date(alert.lastEventAt || alert.updatedAt || alert.createdAt || 0).getTime();
+  }
+
+  function buildAlertOverviewMap(overviews) {
+    return new Map((overviews || []).map((item) => [item.asset.id, item]));
+  }
+
+  function compareAlertPriority(a, b, overviewMap) {
+    const unresolvedA = trimText(a.status) === 'resolved' ? 0 : 1;
+    const unresolvedB = trimText(b.status) === 'resolved' ? 0 : 1;
+    if (unresolvedA !== unresolvedB) return unresolvedB - unresolvedA;
+    const severityA = ALERT_SEVERITY_ORDER[trimText(a.severity)] || 0;
+    const severityB = ALERT_SEVERITY_ORDER[trimText(b.severity)] || 0;
+    if (severityA !== severityB) return severityB - severityA;
+    const healthA = overviewMap.get(a.assetId)?.healthScore ?? 101;
+    const healthB = overviewMap.get(b.assetId)?.healthScore ?? 101;
+    if (healthA !== healthB) return healthA - healthB;
+    return getAlertFreshnessStamp(b) - getAlertFreshnessStamp(a);
+  }
+
+  function sortAlertsForView(alerts, sortMode, overviews = []) {
+    const overviewMap = buildAlertOverviewMap(overviews);
+    return [...(alerts || [])].sort((a, b) => {
+      if (sortMode === 'freshness') {
+        const freshnessDiff = getAlertFreshnessStamp(b) - getAlertFreshnessStamp(a);
+        if (freshnessDiff !== 0) return freshnessDiff;
+        return compareAlertPriority(a, b, overviewMap);
+      }
+      if (sortMode === 'severity') {
+        const severityDiff = (ALERT_SEVERITY_ORDER[trimText(b.severity)] || 0) - (ALERT_SEVERITY_ORDER[trimText(a.severity)] || 0);
+        if (severityDiff !== 0) return severityDiff;
+        return compareAlertPriority(a, b, overviewMap);
+      }
+      if (sortMode === 'status') {
+        const statusDiff = (ALERT_STATUS_ORDER[trimText(b.status)] || 0) - (ALERT_STATUS_ORDER[trimText(a.status)] || 0);
+        if (statusDiff !== 0) return statusDiff;
+        return compareAlertPriority(a, b, overviewMap);
+      }
+      return compareAlertPriority(a, b, overviewMap);
+    });
   }
 
   function getAlertById(alertId) {
@@ -1119,12 +1175,15 @@ const App = (() => {
     const alertEmptyNode = el('profileAlertEmpty');
     const alertStatusNode = el('profileAlertStatusSummary');
     const alertFilterNode = el('profileAlertFilterRow');
-    if (!summaryNode || !alertListNode || !alertEmptyNode || !alertStatusNode || !alertFilterNode) return;
+    const alertSortFieldNode = el('profileAlertSortField');
+    const alertSortInput = el('profileAlertSortInput');
+    if (!summaryNode || !alertListNode || !alertEmptyNode || !alertStatusNode || !alertFilterNode || !alertSortFieldNode || !alertSortInput) return;
 
     if (!apiReady) {
       summaryNode.innerHTML = `<div class="workspace-empty-block">Backend недоступен. После запуска API здесь появятся health score, alert-ы и сводка по сохранённым узлам.</div>`;
       alertStatusNode.innerHTML = '';
       alertFilterNode.style.display = 'none';
+      alertSortFieldNode.style.display = 'none';
       alertEmptyNode.style.display = 'block';
       alertEmptyNode.textContent = 'Alert-лента появится после запуска серверного контура.';
       alertListNode.innerHTML = '';
@@ -1135,6 +1194,7 @@ const App = (() => {
       summaryNode.innerHTML = `<div class="workspace-empty-block">Войдите в аккаунт, чтобы видеть здоровье узлов, приоритетные alert-ы и сохранённую историю по оборудованию.</div>`;
       alertStatusNode.innerHTML = '';
       alertFilterNode.style.display = 'none';
+      alertSortFieldNode.style.display = 'none';
       alertEmptyNode.style.display = 'block';
       alertEmptyNode.textContent = 'После входа здесь появятся узлы, требующие внимания, и рекомендации по следующему действию.';
       alertListNode.innerHTML = '';
@@ -1146,6 +1206,7 @@ const App = (() => {
       summaryNode.innerHTML = `<div class="workspace-empty-block">Сохраните первый серверный сеанс, и профиль начнёт считать health score, отслеживать деградацию и выделять важные кейсы.</div>`;
       alertStatusNode.innerHTML = '';
       alertFilterNode.style.display = 'none';
+      alertSortFieldNode.style.display = 'none';
       alertEmptyNode.style.display = 'block';
       alertEmptyNode.textContent = 'Alert-лента появится после первой сохранённой записи.';
       alertListNode.innerHTML = '';
@@ -1211,19 +1272,14 @@ const App = (() => {
       </div>
     `;
 
-    const serverAlerts = [...alertRegistry].sort((a, b) => {
-      const statusScoreA = a.status === 'resolved' ? 0 : 1;
-      const statusScoreB = b.status === 'resolved' ? 0 : 1;
-      if (statusScoreA !== statusScoreB) return statusScoreB - statusScoreA;
-      const severityA = ALERT_SEVERITY_ORDER[a.severity] || 0;
-      const severityB = ALERT_SEVERITY_ORDER[b.severity] || 0;
-      if (severityA !== severityB) return severityB - severityA;
-      return new Date(b.lastEventAt || b.updatedAt || 0).getTime() - new Date(a.lastEventAt || a.updatedAt || 0).getTime();
-    });
+    const serverAlerts = sortAlertsForView(alertRegistry, alertSortMode, overviews);
 
     if (serverAlerts.length) {
       const counts = getAlertStatusCounts(serverAlerts);
       alertFilterNode.style.display = 'flex';
+      alertSortFieldNode.style.display = 'flex';
+      alertSortInput.disabled = false;
+      alertSortInput.value = alertSortMode;
       alertStatusNode.innerHTML = `
         <span class="workspace-stat-pill">${counts.all} всего</span>
         <span class="workspace-stat-pill">${counts.active} активных</span>
@@ -1283,6 +1339,8 @@ const App = (() => {
 
     alertStatusNode.innerHTML = '';
     alertFilterNode.style.display = 'none';
+    alertSortFieldNode.style.display = 'none';
+    alertSortInput.disabled = true;
     selectedAlertId = null;
     const alerts = overviews
       .map(buildProfileAlert)
@@ -3485,6 +3543,11 @@ const App = (() => {
       const button = event.target.closest('[data-alert-filter]');
       if (!button) return;
       alertStatusFilter = button.dataset.alertFilter || 'all';
+      renderProfileHealthOverview();
+      renderAlertLifecyclePanel();
+    });
+    el('profileAlertSortInput')?.addEventListener('change', (event) => {
+      alertSortMode = trimText(event.target.value) || 'priority';
       renderProfileHealthOverview();
       renderAlertLifecyclePanel();
     });

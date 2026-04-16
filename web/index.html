@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#060a12">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>Vibro — Система вибродиагностики</title>
-  <link rel="stylesheet" href="css/style.css?v=20260416-alert-lifecycle-14">
+  <link rel="stylesheet" href="css/style.css?v=20260416-alert-sort-15">
 </head>
 <body data-mode="defense">
 <a href="#page-home" class="skip-link">Перейти к содержанию</a>
@@ -860,7 +860,18 @@
             <span class="workspace-badge">ALERTS</span>
           </div>
           <div class="profile-alert-toolbar">
-            <div class="profile-alert-status-row" id="profileAlertStatusSummary"></div>
+            <div class="profile-alert-toolbar-head">
+              <div class="profile-alert-status-row" id="profileAlertStatusSummary"></div>
+              <label class="workspace-field profile-alert-sort-field" id="profileAlertSortField">
+                <span>Порядок очереди</span>
+                <select id="profileAlertSortInput">
+                  <option value="priority">По приоритету</option>
+                  <option value="freshness">Сначала свежие</option>
+                  <option value="severity">По severity</option>
+                  <option value="status">По статусу</option>
+                </select>
+              </label>
+            </div>
             <div class="profile-alert-filter-row" id="profileAlertFilterRow">
               <button class="history-btn is-active" type="button" data-alert-filter="all">ВСЕ</button>
               <button class="history-btn" type="button" data-alert-filter="active">АКТИВНЫЕ</button>
@@ -1541,7 +1552,7 @@
 <script src="js/converter.js?v=20260411-upload-window-fix-9"></script>
 <script src="js/sensor.js?v=20260410-fft-fix"></script>
 <script src="js/viz.js?v=20260410-fft-fix"></script>
-<script src="js/app.js?v=20260416-alert-lifecycle-14"></script>
+<script src="js/app.js?v=20260416-alert-sort-15"></script>
 <!-- Notification toast container -->
 <div id="toastContainer" class="toast-container"></div>
 </body>
