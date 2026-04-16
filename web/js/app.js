@@ -33,7 +33,7 @@ const App = (() => {
   let assetStatusFilter = 'all';
   let assetRiskFilter = 'all';
   let assetSortMode = 'priority';
-  const ASSET_VERSION = '20260416-frontier-ui-16';
+  const ASSET_VERSION = '20260416-cinematic-profile-17';
   const STORAGE_KEYS = {
     legacyAuth: 'vm_local_auth_v1',
     legacySessions: 'vm_local_sessions_v1',
@@ -3757,6 +3757,8 @@ const App = (() => {
       '.fault-card',
       '.diag-lead',
       '.diag-presets',
+      '.diag-storyboard-card',
+      '.diag-support-card',
       '.page-compass',
       '.preset-card',
       '.upload-zone',
@@ -3766,6 +3768,7 @@ const App = (() => {
       '.analysis-compare-summary',
       '.signal-box',
       '.card',
+      '.profile-command-shell',
       '.workspace-panel',
       '.profile-alert-item',
       '.assets-hero-copy',

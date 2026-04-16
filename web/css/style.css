@@ -2158,6 +2158,49 @@ textarea:focus-visible {
   padding:24px;
 }
 
+.diag-director-panel {
+  display:grid;
+  gap:10px;
+  margin-top:14px;
+}
+
+.diag-director-card,
+.diag-storyboard-card,
+.diag-support-card,
+.profile-command-shell {
+  border-radius:18px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.03);
+  box-shadow:0 14px 34px rgba(0,0,0,0.14);
+}
+
+.diag-director-card {
+  padding:14px 16px;
+}
+
+.diag-director-label {
+  display:block;
+  font-family:var(--mono);
+  font-size:9px;
+  letter-spacing:1.6px;
+  color:var(--muted);
+}
+
+.diag-director-card strong {
+  display:block;
+  margin-top:9px;
+  color:#fff;
+  font-size:15px;
+  line-height:1.45;
+}
+
+.diag-director-card p {
+  margin-top:8px;
+  color:#91a0b3;
+  font-size:12px;
+  line-height:1.7;
+}
+
 .preset-grid {
   display:grid;
   gap:12px;
@@ -2205,6 +2248,83 @@ textarea:focus-visible {
   grid-template-columns:minmax(0, 1.15fr) minmax(300px, 0.85fr);
   gap:16px;
   align-items:stretch;
+}
+
+.diag-cinematic-grid {
+  display:grid;
+  grid-template-columns:minmax(0, 1.05fr) minmax(320px, 0.95fr);
+  gap:18px;
+  margin-bottom:28px;
+}
+
+.page-compass--analysis {
+  margin-bottom:0;
+}
+
+.diag-storyboard-grid {
+  display:grid;
+  gap:12px;
+}
+
+.diag-storyboard-card {
+  padding:18px;
+}
+
+.diag-storyboard-card strong {
+  display:block;
+  color:#fff;
+  font-size:16px;
+  line-height:1.45;
+}
+
+.diag-storyboard-card p {
+  margin-top:10px;
+  color:#99a8bb;
+  font-size:12px;
+  line-height:1.75;
+}
+
+.diag-support-panel {
+  display:grid;
+  gap:12px;
+}
+
+.diag-support-card {
+  padding:18px;
+}
+
+.diag-support-card p {
+  margin-top:8px;
+  color:#99a8bb;
+  font-size:12px;
+  line-height:1.75;
+}
+
+.diag-support-list {
+  display:flex;
+  flex-wrap:wrap;
+  gap:8px;
+  margin-top:8px;
+}
+
+.diag-support-list span {
+  display:inline-flex;
+  align-items:center;
+  padding:7px 10px;
+  border-radius:999px;
+  border:1px solid rgba(255,255,255,0.08);
+  background:rgba(255,255,255,0.04);
+  color:#d9e5f1;
+  font-family:var(--mono);
+  font-size:10px;
+  letter-spacing:1px;
+}
+
+.diag-support-actions {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  margin-top:12px;
 }
 
 .workspace-grid {
@@ -2398,6 +2518,42 @@ textarea:focus-visible {
   grid-template-columns:minmax(0, 1.15fr) minmax(320px, 0.85fr);
   gap:18px;
   margin-bottom:18px;
+}
+
+.profile-command-shell {
+  display:grid;
+  grid-template-columns:minmax(0, 1.05fr) minmax(300px, 0.95fr);
+  gap:18px;
+  padding:22px 24px;
+  margin-bottom:24px;
+  background:linear-gradient(180deg, rgba(14,19,29,0.95), rgba(9,13,21,0.92));
+}
+
+.profile-command-copy {
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+.profile-command-nav {
+  display:flex;
+  flex-wrap:wrap;
+  gap:10px;
+  align-content:flex-start;
+  justify-content:flex-end;
+}
+
+.profile-main-grid {
+  display:grid;
+  grid-template-columns:minmax(0, 1.08fr) minmax(320px, 0.92fr);
+  gap:18px;
+  align-items:start;
+}
+
+.profile-primary-stack,
+.profile-secondary-stack {
+  display:grid;
+  gap:18px;
 }
 
 .profile-health-summary {
@@ -4124,6 +4280,8 @@ textarea:focus-visible {
 .page-compass,
 .diag-launchpad,
 .profile-health-shell,
+.profile-command-shell,
+.profile-main-grid,
 .workspace-grid {
   gap:22px;
 }
@@ -4203,8 +4361,11 @@ textarea:focus-visible {
   .script-grid,
   .thesis-grid,
   .diag-launchpad,
+  .diag-cinematic-grid,
   .page-compass,
+  .profile-command-shell,
   .profile-health-shell,
+  .profile-main-grid,
   .assets-hero,
   .fleet-layout,
   .workspace-grid,
@@ -4306,6 +4467,7 @@ textarea:focus-visible {
   .sales-steps,
   .script-grid,
   .thesis-grid,
+  .diag-storyboard-grid,
   .profile-health-grid,
   .fault-btns,
   .analysis-compare-metrics,
@@ -4388,5 +4550,11 @@ textarea:focus-visible {
 
   .logo::after {
     display:none;
+  }
+
+  .profile-command-shell,
+  .diag-support-card,
+  .diag-storyboard-card {
+    padding:18px;
   }
 }

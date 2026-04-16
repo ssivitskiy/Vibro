@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#060a12">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>Vibro — Система вибродиагностики</title>
-  <link rel="stylesheet" href="css/style.css?v=20260416-frontier-ui-16">
+  <link rel="stylesheet" href="css/style.css?v=20260416-cinematic-profile-17">
 </head>
 <body data-mode="defense">
 <a href="#page-home" class="skip-link">Перейти к содержанию</a>
@@ -647,44 +647,53 @@
               <p>Базовый режим, с которого удобно начать сопоставление с дефектными состояниями.</p>
             </button>
           </div>
+          <div class="diag-director-panel">
+            <div class="diag-director-card">
+              <span class="diag-director-label">ANALYSIS MODE</span>
+              <strong>Live operator desk</strong>
+              <p>Экран построен как одна сцена: выбор сигнала, визуальный анализ и итог модели без лишних переходов.</p>
+            </div>
+            <div class="diag-director-card">
+              <span class="diag-director-label">OUTPUT</span>
+              <strong>Signal + FFT + diagnosis</strong>
+              <p>После запуска кейса пользователь сразу видит, как меняются графики и какой диагноз ставит модель.</p>
+            </div>
+          </div>
         </div>
       </div>
 
-      <div class="page-compass">
-        <div class="page-compass-copy">
-          <div class="page-compass-kicker">ГДЕ Я СЕЙЧАС</div>
-          <div class="page-compass-title">Анализ — это быстрый сценарий “сигнал → графики → диагноз”</div>
-          <div class="page-compass-note">Здесь можно загрузить свой файл, открыть готовый сценарий, посмотреть графики и сразу получить диагноз.</div>
+      <div class="diag-cinematic-grid">
+        <div class="page-compass page-compass--analysis">
+          <div class="page-compass-copy">
+            <div class="page-compass-kicker">ГДЕ Я СЕЙЧАС</div>
+            <div class="page-compass-title">Анализ — это один связный сценарий от сигнала до инженерного вывода</div>
+            <div class="page-compass-note">Сначала выбираем источник сигнала, затем смотрим временную область и FFT, после этого получаем диагноз и сохраняем результат в рабочий контур.</div>
+          </div>
+          <div class="page-compass-links">
+            <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('diag','uploadZone')">ЗАГРУЗИТЬ ФАЙЛ</button>
+            <button class="page-compass-link" type="button" onclick="App.goPageSection('diag','faultBtns')">ГОТОВЫЕ КЕЙСЫ</button>
+            <button class="page-compass-link" type="button" onclick="App.goPageSection('diag','sigCanvas')">ГРАФИКИ</button>
+            <button class="page-compass-link" type="button" onclick="App.goPageSection('diag','diagResult')">ДИАГНОЗ</button>
+            <button class="page-compass-link" type="button" onclick="goPage('profile')">ПРОФИЛЬ</button>
+          </div>
         </div>
-        <div class="page-compass-links">
-          <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('diag','uploadZone')">ЗАГРУЗИТЬ ФАЙЛ</button>
-          <button class="page-compass-link" type="button" onclick="App.goPageSection('diag','faultBtns')">ГОТОВЫЕ КЕЙСЫ</button>
-          <button class="page-compass-link" type="button" onclick="App.goPageSection('diag','sigCanvas')">ГРАФИКИ</button>
-          <button class="page-compass-link" type="button" onclick="App.goPageSection('diag','diagResult')">ДИАГНОЗ</button>
-          <button class="page-compass-link" type="button" onclick="goPage('profile')">ПРОФИЛЬ</button>
-        </div>
-      </div>
 
-      <div class="thesis-grid" style="margin-bottom:28px">
-        <div class="card thesis-card">
-          <div class="card-title">1. ВЫБЕРИТЕ РЕЖИМ</div>
-          <p>
-            Можно начать с готового demo-сценария или загрузить собственный файл в формате SEU TXT, WAV, CSV, MAT,
-            NPY или UFF.
-          </p>
-        </div>
-        <div class="card thesis-card">
-          <div class="card-title">2. ПОСМОТРИТЕ СИГНАЛ И FFT</div>
-          <p>
-            Страница показывает временную область, спектр и инженерные подсказки, чтобы результат модели был сразу
-            понятен по самому сигналу.
-          </p>
-        </div>
-        <div class="card thesis-card">
-          <div class="card-title">3. СОХРАНИТЕ В ПРОФИЛЬ</div>
-          <p>
-            Если результат нужно сохранить, сравнить или оставить комментарий, это можно сделать на странице профиля.
-          </p>
+        <div class="diag-storyboard-grid">
+          <div class="diag-storyboard-card">
+            <div class="card-title">01 · SOURCE</div>
+            <strong>Выбор сценария</strong>
+            <p>Начните с demo-case или загрузите собственный файл в формате SEU TXT, WAV, CSV, MAT, NPY или UFF.</p>
+          </div>
+          <div class="diag-storyboard-card">
+            <div class="card-title">02 · EVIDENCE</div>
+            <strong>Чтение сигнала</strong>
+            <p>Временная область и частотный спектр сразу показывают, какие паттерны лежат за будущим диагнозом модели.</p>
+          </div>
+          <div class="diag-storyboard-card">
+            <div class="card-title">03 · ACTION</div>
+            <strong>Следующий шаг</strong>
+            <p>После диагностики результат можно сохранить в профиль, сравнить с baseline или открыть физическую интерпретацию в 3D.</p>
+          </div>
         </div>
       </div>
 
@@ -698,6 +707,30 @@
             <span class="format-badge">SEU TXT</span><span class="format-badge">WAV</span><span
             class="format-badge">CSV</span><span class="format-badge">MAT</span><span
             class="format-badge">NPY</span><span class="format-badge">UFF</span>
+          </div>
+        </div>
+        <div class="diag-support-panel">
+          <div class="diag-support-card">
+            <div class="card-title">ФОРМАТЫ ИСТОЧНИКОВ</div>
+            <div class="diag-support-list">
+              <span>SEU TXT</span>
+              <span>WAV</span>
+              <span>CSV / TSV</span>
+              <span>MAT / NPY / NPZ</span>
+              <span>UFF / DAT</span>
+            </div>
+          </div>
+          <div class="diag-support-card">
+            <div class="card-title">ЧТО ДЕЛАЕТ СТРАНИЦА</div>
+            <p>Анализ извлекает признаки, строит FFT, подсвечивает evidence и собирает итог диагноза в одном рабочем экране без отдельного backend-ML шага.</p>
+          </div>
+          <div class="diag-support-card">
+            <div class="card-title">ДАЛЬШЕ ПО МАРШРУТУ</div>
+            <div class="diag-support-actions">
+              <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('diag','diagResult')">К ДИАГНОЗУ</button>
+              <button class="page-compass-link" type="button" onclick="goPage('profile')">В ПРОФИЛЬ</button>
+              <a href="simulator.html" class="page-compass-link" style="text-decoration:none;display:inline-flex">В 3D</a>
+            </div>
           </div>
         </div>
       </div>
@@ -795,61 +828,21 @@
 <div id="page-profile" style="display:none">
   <section class="section" style="padding-top:80px">
     <div class="container">
-      <div class="diag-launchpad">
-        <div class="diag-lead">
+      <div class="profile-command-shell">
+        <div class="profile-command-copy">
           <div class="label" style="margin-bottom:8px">Профиль и рабочий кабинет</div>
-          <h2 class="diag-headline">Отдельный кабинет пользователя: история, сравнение, monitoring и рабочие действия</h2>
+          <h2 class="diag-headline">Один кабинет для истории, alert-ов, сравнения и реальных измерений</h2>
           <p class="diag-copy">
-            Здесь собраны вход в аккаунт, журнал сохранённых состояний, формы инженерных комментариев, compare mode,
-            серверные измерения и все действия, которые относятся к персональному рабочему процессу.
+            Здесь живёт весь рабочий контур после анализа: health overview, alert lifecycle, журнал сеансов,
+            baseline-сравнение и серверные raw-записи.
           </p>
-          <div class="diag-chip-row">
-            <span class="diag-chip">аккаунт и сессии</span>
-            <span class="diag-chip">журнал и заметки</span>
-            <span class="diag-chip">сравнение и baseline</span>
-            <span class="diag-chip">серверный мониторинг</span>
-          </div>
         </div>
-        <div class="diag-presets">
-          <div class="card-title">Что хранится в профиле</div>
-          <div class="preset-grid">
-            <div class="preset-card">
-              <div class="preset-card-top">
-                <strong>Сохранённые сеансы</strong>
-                <span class="hero-scenario-badge">ЖУРНАЛ</span>
-              </div>
-              <p>История диагностических записей с baseline, комментариями инженера и переходами состояний.</p>
-            </div>
-            <div class="preset-card">
-              <div class="preset-card-top">
-                <strong>Лента измерений</strong>
-                <span class="hero-scenario-badge hero-scenario-badge--warning">RAW DATA</span>
-              </div>
-              <p>Реальные файлы и сенсорные записи, сохранённые на сервере для повторного анализа и истории измерений.</p>
-            </div>
-            <div class="preset-card">
-              <div class="preset-card-top">
-                <strong>Режим сравнения</strong>
-                <span class="hero-scenario-badge hero-scenario-badge--critical">EVIDENCE</span>
-              </div>
-              <p>Сравнение эталонной и текущей записи, а также сценариев до и после обслуживания.</p>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div class="page-compass">
-        <div class="page-compass-copy">
-          <div class="page-compass-kicker">ЧТО ДЕЛАТЬ ЗДЕСЬ</div>
-          <div class="page-compass-title">Профиль собирает health overview, alert-ы и рабочий контур после анализа</div>
-          <div class="page-compass-note">Сначала посмотрите, какие узлы требуют внимания, затем войдите в аккаунт, сохраняйте сеансы, сравнивайте baseline и текущие записи, оставляйте комментарии инженера и управляйте серверными измерениями.</div>
-        </div>
-        <div class="page-compass-links">
-          <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('profile','profileHealthPanel')">ОБЗОР</button>
-          <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','authPanel')">АККАУНТ</button>
+        <div class="profile-command-nav">
+          <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('profile','profileHealthPanel')">HEALTH</button>
           <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','journalPanel')">ЖУРНАЛ</button>
-          <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','analysisComparePanel')">СРАВНЕНИЕ</button>
-          <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','monitoringList')">МОНИТОРИНГ</button>
+          <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','analysisComparePanel')">COMPARE</button>
+          <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','monitoringPanel')">RAW DATA</button>
+          <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','authPanel')">АККАУНТ</button>
         </div>
       </div>
 
@@ -906,66 +899,184 @@
         </div>
       </div>
 
-      <div class="workspace-panel workspace-panel--alert-log" id="profileAlertLogPanel">
-        <div class="workspace-panel-head">
-          <div>
-            <div class="card-title">ALERT LIFECYCLE И ACTION LOG</div>
-            <p class="workspace-copy">
-              Для выбранного alert-а можно подтвердить статус, перевести его в работу, закрыть после обслуживания и зафиксировать инженерное действие отдельной записью в журнале событий.
-            </p>
+      <div class="profile-main-grid">
+        <div class="profile-primary-stack">
+          <div class="workspace-panel workspace-panel--journal" id="journalPanel">
+            <div class="workspace-panel-head">
+              <div>
+                <div class="card-title">ЖУРНАЛ СОСТОЯНИЙ</div>
+                <p class="workspace-copy">
+                  Здесь фиксируются диагностические сеансы: состояние узла, комментарии инженера, baseline и переходы между стадиями.
+                </p>
+              </div>
+              <div class="workspace-stats" id="historyStats"></div>
+            </div>
+
+            <div class="workspace-form-grid workspace-form-grid--journal">
+              <label class="workspace-field">
+                <span>Узел / источник</span>
+                <input type="text" id="assetNameInput" placeholder="Gearbox A-01">
+              </label>
+              <label class="workspace-field">
+                <span>Стадия состояния</span>
+                <select id="sessionStateInput">
+                  <option value="healthy">Healthy</option>
+                  <option value="warning">Warning</option>
+                  <option value="service">Service</option>
+                  <option value="after_maintenance">After maintenance</option>
+                </select>
+              </label>
+              <label class="workspace-field">
+                <span>Статус работы</span>
+                <select id="workStatusInput">
+                  <option value="observe">Наблюдать</option>
+                  <option value="inspect">Проверить</option>
+                  <option value="repair">Ремонт</option>
+                  <option value="replaced">Заменено</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="workspace-field workspace-field--stacked">
+              <span>Комментарий к записи</span>
+              <textarea id="sessionNoteInput" rows="3" placeholder="Например: зафиксирован рост ударных импульсов, нужна повторная проверка после обслуживания."></textarea>
+            </label>
+
+            <div class="workspace-form-grid workspace-form-grid--journal workspace-form-grid--notes">
+              <label class="workspace-field">
+                <span>Почему принято решение</span>
+                <textarea id="engineerReasonInput" rows="4" placeholder="Например: рост ударных импульсов и боковых полос вокруг GMF подтверждает переход в warning-stage."></textarea>
+              </label>
+              <label class="workspace-field">
+                <span>Что сделано дальше</span>
+                <textarea id="actionTakenInput" rows="4" placeholder="Например: назначен осмотр, выполнен ремонт, узел переведён в after maintenance."></textarea>
+              </label>
+            </div>
+
+            <div class="workspace-capture" id="captureSummary">
+              Запустите анализ, затем сохраните текущий результат в журнал состояний.
+            </div>
+
+            <div class="workspace-empty" id="historyEmpty">
+              История пока пуста. Первая сохранённая запись появится здесь и станет базой для сравнения состояний.
+            </div>
+            <div class="history-list" id="historyList"></div>
+
           </div>
-          <span class="workspace-badge">WORKFLOW</span>
+
+          <div class="analysis-compare-panel" id="analysisComparePanel">
+            <div class="workspace-panel-head">
+              <div>
+                <div class="card-title">РЕЖИМ СРАВНЕНИЯ</div>
+                <p class="workspace-copy">Сравнение текущего анализа, эталонной записи и контрольных проверок после обслуживания.</p>
+              </div>
+              <span class="workspace-badge">EVIDENCE</span>
+            </div>
+            <div class="workspace-form-grid analysis-compare-grid">
+              <label class="workspace-field">
+                <span>Узел</span>
+                <select id="analysisCompareAssetSelect"></select>
+              </label>
+              <label class="workspace-field">
+                <span>Режим сравнения</span>
+                <select id="analysisCompareModeSelect">
+                  <option value="baseline_current">Эталон vs текущий анализ</option>
+                  <option value="baseline_saved">Эталон vs сохранённый сеанс</option>
+                  <option value="before_after">До vs после обслуживания</option>
+                </select>
+              </label>
+              <label class="workspace-field">
+                <span>Эталон</span>
+                <select id="analysisCompareReferenceSelect"></select>
+              </label>
+              <label class="workspace-field">
+                <span>Сравниваемая запись</span>
+                <select id="analysisCompareTargetSelect"></select>
+              </label>
+            </div>
+            <div class="analysis-compare-chip-row">
+              <button class="analysis-compare-chip" type="button" data-analysis-compare-preset="baseline_current">ЭТАЛОН VS ТЕКУЩИЙ</button>
+              <button class="analysis-compare-chip" type="button" data-analysis-compare-preset="baseline_saved">ЭТАЛОН VS ДЕФЕКТ</button>
+              <button class="analysis-compare-chip" type="button" data-analysis-compare-preset="before_after">ДО VS ПОСЛЕ</button>
+            </div>
+            <div class="analysis-compare-summary" id="analysisCompareSummary"></div>
+          </div>
+
+          <div class="workspace-panel monitoring-panel" id="monitoringPanel">
+            <div class="workspace-panel-head">
+              <div>
+                <div class="card-title">ЖУРНАЛ ИЗМЕРЕНИЙ</div>
+                <p class="workspace-copy">Реальные файлы и сенсорные записи, которые можно повторно открыть на странице анализа и использовать как основу для сравнения.</p>
+              </div>
+              <span class="workspace-badge">RAW DATA</span>
+            </div>
+            <div class="workspace-stats" id="monitoringStats"></div>
+            <div class="workspace-empty" id="monitoringEmpty">
+              После входа в аккаунт можно загружать реальные файлы и открывать их снова на странице анализа.
+            </div>
+            <div class="monitoring-list" id="monitoringList"></div>
+          </div>
         </div>
 
-        <div class="profile-alert-log-summary" id="profileAlertLogSummary"></div>
+        <div class="profile-secondary-stack">
+          <div class="workspace-panel workspace-panel--alert-log" id="profileAlertLogPanel">
+            <div class="workspace-panel-head">
+              <div>
+                <div class="card-title">ALERT LIFECYCLE И ACTION LOG</div>
+                <p class="workspace-copy">
+                  Для выбранного alert-а можно подтвердить статус, перевести его в работу, закрыть после обслуживания и зафиксировать инженерное действие отдельной записью.
+                </p>
+              </div>
+              <span class="workspace-badge">WORKFLOW</span>
+            </div>
 
-        <form class="profile-alert-log-form" id="profileAlertEventForm">
-          <div class="workspace-form-grid">
-            <label class="workspace-field">
-              <span>Тип события</span>
-              <select id="alertEventTypeInput">
-                <option value="note">Комментарий</option>
-                <option value="acknowledge">Подтверждение</option>
-                <option value="work">Работа по alert-у</option>
-                <option value="resolve">Закрытие</option>
-              </select>
-            </label>
-            <label class="workspace-field">
-              <span>Следующий статус</span>
-              <select id="alertNextStatusInput">
-                <option value="">Без смены статуса</option>
-                <option value="new">New</option>
-                <option value="acknowledged">Acknowledged</option>
-                <option value="in_progress">In progress</option>
-                <option value="resolved">Resolved</option>
-              </select>
-            </label>
+            <div class="profile-alert-log-summary" id="profileAlertLogSummary"></div>
+
+            <form class="profile-alert-log-form" id="profileAlertEventForm">
+              <div class="workspace-form-grid">
+                <label class="workspace-field">
+                  <span>Тип события</span>
+                  <select id="alertEventTypeInput">
+                    <option value="note">Комментарий</option>
+                    <option value="acknowledge">Подтверждение</option>
+                    <option value="work">Работа по alert-у</option>
+                    <option value="resolve">Закрытие</option>
+                  </select>
+                </label>
+                <label class="workspace-field">
+                  <span>Следующий статус</span>
+                  <select id="alertNextStatusInput">
+                    <option value="">Без смены статуса</option>
+                    <option value="new">New</option>
+                    <option value="acknowledged">Acknowledged</option>
+                    <option value="in_progress">In progress</option>
+                    <option value="resolved">Resolved</option>
+                  </select>
+                </label>
+              </div>
+              <label class="workspace-field workspace-field--stacked">
+                <span>Комментарий инженера / выполненное действие</span>
+                <textarea id="alertEventMessageInput" rows="3" placeholder="Например: alert подтверждён, узел отправлен в ремонт, назначена контрольная проверка после обслуживания."></textarea>
+              </label>
+              <div class="workspace-actions">
+                <button class="btn btn-primary" type="submit" id="alertEventSubmitBtn">СОХРАНИТЬ СОБЫТИЕ</button>
+                <button class="btn" type="button" id="alertOpenCompareBtn">ОТКРЫТЬ СРАВНЕНИЕ</button>
+                <button class="btn" type="button" id="alertOpenJournalBtn">К ЖУРНАЛУ</button>
+              </div>
+            </form>
+
+            <div class="workspace-empty" id="profileAlertLogEmpty">
+              Выберите alert из списка выше, чтобы увидеть его lifecycle и историю действий.
+            </div>
+            <div class="profile-alert-event-list" id="profileAlertEventList"></div>
           </div>
-          <label class="workspace-field workspace-field--stacked">
-            <span>Комментарий инженера / выполненное действие</span>
-            <textarea id="alertEventMessageInput" rows="3" placeholder="Например: alert подтверждён, узел отправлен в ремонт, назначена контрольная проверка после обслуживания."></textarea>
-          </label>
-          <div class="workspace-actions">
-            <button class="btn btn-primary" type="submit" id="alertEventSubmitBtn">СОХРАНИТЬ СОБЫТИЕ</button>
-            <button class="btn" type="button" id="alertOpenCompareBtn">ОТКРЫТЬ СРАВНЕНИЕ</button>
-            <button class="btn" type="button" id="alertOpenJournalBtn">К ЖУРНАЛУ</button>
-          </div>
-        </form>
 
-        <div class="workspace-empty" id="profileAlertLogEmpty">
-          Выберите alert из списка выше, чтобы увидеть его lifecycle и историю действий.
-        </div>
-        <div class="profile-alert-event-list" id="profileAlertEventList"></div>
-      </div>
-
-      <div class="workspace-grid">
-        <div class="workspace-panel workspace-panel--profile" id="authPanel">
+          <div class="workspace-panel workspace-panel--profile" id="authPanel">
           <div class="workspace-panel-head">
             <div>
               <div class="card-title">СЕРВЕРНЫЙ КАБИНЕТ</div>
               <p class="workspace-copy">
-                Реальные пользователи, серверные сессии и история диагностических записей живут в общей базе данных.
-                Вход выполняется по email и паролю, а старые локальные сеансы можно импортировать в новый контур.
+                Пользовательская сессия, импорт старых браузерных записей и вход в общий серверный контур диагностики.
               </p>
             </div>
             <span class="workspace-badge">FASTAPI</span>
@@ -996,122 +1107,7 @@
 
           <div class="workspace-summary" id="authSummary"></div>
         </div>
-
-        <div class="workspace-panel workspace-panel--journal" id="journalPanel">
-          <div class="workspace-panel-head">
-            <div>
-              <div class="card-title">ЖУРНАЛ СОСТОЯНИЙ</div>
-              <p class="workspace-copy">
-                После анализа можно сохранить запись как диагностический сеанс: название узла, статус, комментарий и результат модели.
-              </p>
-            </div>
-            <div class="workspace-stats" id="historyStats"></div>
-          </div>
-
-          <div class="workspace-form-grid workspace-form-grid--journal">
-            <label class="workspace-field">
-              <span>Узел / источник</span>
-              <input type="text" id="assetNameInput" placeholder="Gearbox A-01">
-            </label>
-            <label class="workspace-field">
-              <span>Стадия состояния</span>
-              <select id="sessionStateInput">
-                <option value="healthy">Healthy</option>
-                <option value="warning">Warning</option>
-                <option value="service">Service</option>
-                <option value="after_maintenance">After maintenance</option>
-              </select>
-            </label>
-            <label class="workspace-field">
-              <span>Статус работы</span>
-              <select id="workStatusInput">
-                <option value="observe">Наблюдать</option>
-                <option value="inspect">Проверить</option>
-                <option value="repair">Ремонт</option>
-                <option value="replaced">Заменено</option>
-              </select>
-            </label>
-          </div>
-
-          <label class="workspace-field workspace-field--stacked">
-            <span>Комментарий к записи</span>
-            <textarea id="sessionNoteInput" rows="3" placeholder="Например: зафиксирован рост ударных импульсов, нужна повторная проверка после обслуживания."></textarea>
-          </label>
-
-          <div class="workspace-form-grid workspace-form-grid--journal workspace-form-grid--notes">
-            <label class="workspace-field">
-              <span>Почему принято решение</span>
-              <textarea id="engineerReasonInput" rows="4" placeholder="Например: рост ударных импульсов и боковых полос вокруг GMF подтверждает переход в warning-stage."></textarea>
-            </label>
-            <label class="workspace-field">
-              <span>Что сделано дальше</span>
-              <textarea id="actionTakenInput" rows="4" placeholder="Например: назначен осмотр, выполнен ремонт, узел переведён в after maintenance."></textarea>
-            </label>
-          </div>
-
-          <div class="workspace-capture" id="captureSummary">
-            Запустите анализ, затем сохраните текущий результат в журнал состояний.
-          </div>
-
-          <div class="workspace-empty" id="historyEmpty">
-            История пока пуста. Первая сохранённая запись появится здесь и станет базой для сравнения состояний.
-          </div>
-          <div class="history-list" id="historyList"></div>
-
         </div>
-      </div>
-
-      <div class="analysis-compare-panel" id="analysisComparePanel">
-        <div class="workspace-panel-head">
-          <div>
-            <div class="card-title">РЕЖИМ СРАВНЕНИЯ</div>
-            <p class="workspace-copy">Сравнение текущего анализа, эталонной записи и контрольных проверок после обслуживания.</p>
-          </div>
-          <span class="workspace-badge">EVIDENCE</span>
-        </div>
-        <div class="workspace-form-grid analysis-compare-grid">
-          <label class="workspace-field">
-            <span>Узел</span>
-            <select id="analysisCompareAssetSelect"></select>
-          </label>
-          <label class="workspace-field">
-            <span>Режим сравнения</span>
-            <select id="analysisCompareModeSelect">
-              <option value="baseline_current">Эталон vs текущий анализ</option>
-              <option value="baseline_saved">Эталон vs сохранённый сеанс</option>
-              <option value="before_after">До vs после обслуживания</option>
-            </select>
-          </label>
-          <label class="workspace-field">
-            <span>Эталон</span>
-            <select id="analysisCompareReferenceSelect"></select>
-          </label>
-          <label class="workspace-field">
-            <span>Сравниваемая запись</span>
-            <select id="analysisCompareTargetSelect"></select>
-          </label>
-        </div>
-        <div class="analysis-compare-chip-row">
-          <button class="analysis-compare-chip" type="button" data-analysis-compare-preset="baseline_current">ЭТАЛОН VS ТЕКУЩИЙ</button>
-          <button class="analysis-compare-chip" type="button" data-analysis-compare-preset="baseline_saved">ЭТАЛОН VS ДЕФЕКТ</button>
-          <button class="analysis-compare-chip" type="button" data-analysis-compare-preset="before_after">ДО VS ПОСЛЕ</button>
-        </div>
-        <div class="analysis-compare-summary" id="analysisCompareSummary"></div>
-      </div>
-
-      <div class="workspace-panel monitoring-panel">
-        <div class="workspace-panel-head">
-          <div>
-            <div class="card-title">ЖУРНАЛ ИЗМЕРЕНИЙ</div>
-            <p class="workspace-copy">Серверный журнал реальных файлов и сенсорных записей. Здесь хранятся исходные измерения, которые можно повторно открыть на странице анализа.</p>
-          </div>
-          <span class="workspace-badge">RAW DATA</span>
-        </div>
-        <div class="workspace-stats" id="monitoringStats"></div>
-        <div class="workspace-empty" id="monitoringEmpty">
-          После входа в аккаунт можно загружать реальные файлы и открывать их снова на странице анализа.
-        </div>
-        <div class="monitoring-list" id="monitoringList"></div>
       </div>
     </div>
   </section>
@@ -1570,7 +1566,7 @@
 <script src="js/converter.js?v=20260411-upload-window-fix-9"></script>
 <script src="js/sensor.js?v=20260410-fft-fix"></script>
 <script src="js/viz.js?v=20260410-fft-fix"></script>
-<script src="js/app.js?v=20260416-frontier-ui-16"></script>
+<script src="js/app.js?v=20260416-cinematic-profile-17"></script>
 <!-- Notification toast container -->
 <div id="toastContainer" class="toast-container"></div>
 </body>
