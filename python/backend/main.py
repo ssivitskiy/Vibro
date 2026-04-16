@@ -17,8 +17,11 @@ from sqlmodel import Session, select
 
 from backend.config import BASE_DIR, RUNTIME_DIR, get_settings
 from backend.db import build_engine, get_session, init_db
-from backend.models import Asset, Inspection, Measurement, Report, Snapshot, User, UserSession, new_id, utcnow
+from backend.models import Alert, AlertEvent, Asset, Inspection, Measurement, Report, Snapshot, User, UserSession, new_id, utcnow
 from backend.schemas import (
+    AlertEventCreate,
+    AlertEventRead,
+    AlertRead,
     AssetCreate,
     AssetRead,
     AuthPayload,
@@ -60,6 +63,8 @@ WORK_STATUS_LABELS = {
     "repair": "Ремонт",
     "replaced": "Заменено",
 }
+ALERT_STATUS_FLOW = {"new", "acknowledged", "in_progress", "resolved"}
+ALERT_SEVERITY_ORDER = {"low": 1, "medium": 2, "high": 3, "critical": 4}
 
 
 def dumps_json(value: Any) -> str:
@@ -206,6 +211,264 @@ def serialize_report(report: Report) -> ReportRead:
         created_at=report.created_at,
         updated_at=report.updated_at,
     )
+
+
+def serialize_alert(alert: Alert, asset: Asset, events_count: int = 0) -> AlertRead:
+    return AlertRead(
+        id=alert.id,
+        asset_id=alert.asset_id,
+        asset_name=asset.name,
+        inspection_id=alert.inspection_id,
+        measurement_id=alert.measurement_id,
+        alert_type=alert.alert_type,
+        severity=alert.severity,
+        status=alert.status,
+        title=alert.title,
+        summary=alert.summary,
+        recommended_action=alert.recommended_action,
+        current_class=alert.current_class,
+        current_confidence=alert.current_confidence,
+        events_count=events_count,
+        last_event_at=alert.last_event_at,
+        created_at=alert.created_at,
+        updated_at=alert.updated_at,
+    )
+
+
+def serialize_alert_event(event: AlertEvent, author: User | None) -> AlertEventRead:
+    return AlertEventRead(
+        id=event.id,
+        alert_id=event.alert_id,
+        inspection_id=event.inspection_id,
+        event_type=event.event_type,
+        from_status=event.from_status,
+        to_status=event.to_status,
+        message=event.message,
+        metadata=loads_json(event.metadata_json, {}),
+        author_name=author.display_name if author else "Unknown user",
+        created_at=event.created_at,
+    )
+
+
+def inspection_requires_alert(inspection: Inspection) -> bool:
+    if inspection.predicted_class != "normal":
+        return True
+    if inspection.state_key in {"warning", "service", "critical"}:
+        return True
+    return inspection.work_status in {"inspect", "repair"}
+
+
+def infer_alert_severity(inspection: Inspection) -> str:
+    if inspection.work_status == "repair" or inspection.state_key == "service":
+        return "high"
+    if inspection.predicted_class in {"tooth_miss", "root_crack", "combination"}:
+        return "critical"
+    if inspection.predicted_class in {"inner_race", "tooth_chip"}:
+        return "high"
+    if inspection.predicted_class in {"surface_wear", "outer_race", "ball_fault"}:
+        return "medium"
+    return "low"
+
+
+def infer_alert_status_from_inspection(inspection: Inspection, current_status: str | None = None) -> str:
+    if inspection.predicted_class == "normal" and inspection.state_key == "after_maintenance":
+        return "resolved"
+    if inspection.work_status == "replaced":
+        return "resolved"
+    if inspection.work_status == "repair" or inspection.state_key == "service":
+        return "in_progress"
+    if current_status in {"acknowledged", "in_progress"}:
+        return current_status
+    return "new"
+
+
+def get_active_alert_for_asset(session: Session, user_id: str, asset_id: str) -> Alert | None:
+    statement = (
+        select(Alert)
+        .where(
+            Alert.user_id == user_id,
+            Alert.asset_id == asset_id,
+            Alert.status != "resolved",
+        )
+        .order_by(Alert.updated_at.desc())
+    )
+    return session.exec(statement).first()
+
+
+def get_latest_alert_for_inspection(session: Session, user_id: str, inspection_id: str) -> Alert | None:
+    statement = (
+        select(Alert)
+        .where(Alert.user_id == user_id, Alert.inspection_id == inspection_id)
+        .order_by(Alert.updated_at.desc())
+    )
+    return session.exec(statement).first()
+
+
+def list_alert_events(session: Session, user_id: str, alert_id: str) -> list[AlertEvent]:
+    statement = (
+        select(AlertEvent)
+        .join(Alert, Alert.id == AlertEvent.alert_id)
+        .where(Alert.user_id == user_id, AlertEvent.alert_id == alert_id)
+        .order_by(AlertEvent.created_at.desc())
+    )
+    return session.exec(statement).all()
+
+
+def build_alert_message(inspection: Inspection, asset: Asset) -> tuple[str, str, str]:
+    playbook = loads_json(inspection.playbook_json, {})
+    diagnosis_label = inspection.predicted_class
+    title = f"{asset.name} · {diagnosis_label}"
+    summary = (
+        inspection.engineer_reason
+        or inspection.note
+        or f"{diagnosis_label} · состояние {inspection.state_label} · статус {inspection.work_status_label}"
+    )
+    recommended_action = (
+        inspection.action_taken
+        or playbook.get("action")
+        or playbook.get("priority")
+        or "Требуется инженерное подтверждение следующего шага."
+    )
+    return title, summary, recommended_action
+
+
+def create_alert_event(
+    session: Session,
+    *,
+    alert: Alert,
+    user: User,
+    event_type: str,
+    message: str,
+    inspection_id: str | None = None,
+    next_status: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> AlertEvent:
+    from_status = alert.status
+    normalized_status = next_status if next_status in ALERT_STATUS_FLOW else None
+    if normalized_status:
+        alert.status = normalized_status
+    now = utcnow()
+    alert.last_event_at = now
+    alert.updated_at = now
+    event = AlertEvent(
+        alert_id=alert.id,
+        user_id=user.id,
+        inspection_id=inspection_id,
+        event_type=event_type,
+        from_status=None if event_type == "created" else from_status,
+        to_status=alert.status if normalized_status or event_type == "created" else None,
+        message=message,
+        metadata_json=dumps_json(metadata or {}),
+        created_at=now,
+    )
+    session.add(alert)
+    session.add(event)
+    return event
+
+
+def sync_alert_for_inspection(session: Session, user: User, asset: Asset, inspection: Inspection) -> Alert | None:
+    active_alert = get_active_alert_for_asset(session, user.id, asset.id)
+    desired_status = infer_alert_status_from_inspection(inspection, active_alert.status if active_alert else None)
+    title, summary, recommended_action = build_alert_message(inspection, asset)
+
+    if not inspection_requires_alert(inspection):
+        if active_alert and desired_status == "resolved" and active_alert.status != "resolved":
+            active_alert.title = title
+            active_alert.summary = summary
+            active_alert.recommended_action = recommended_action
+            active_alert.inspection_id = inspection.id
+            active_alert.measurement_id = inspection.measurement_id
+            active_alert.current_class = inspection.predicted_class
+            active_alert.current_confidence = inspection.confidence
+            active_alert.severity = infer_alert_severity(inspection)
+            create_alert_event(
+                session,
+                alert=active_alert,
+                user=user,
+                event_type="inspection_sync",
+                message="Контрольная запись after maintenance завершила alert-цикл.",
+                inspection_id=inspection.id,
+                next_status="resolved",
+                metadata={"source": "inspection_sync"},
+            )
+        return active_alert
+
+    severity = infer_alert_severity(inspection)
+    if active_alert:
+        previous_inspection_id = active_alert.inspection_id
+        active_alert.inspection_id = inspection.id
+        active_alert.measurement_id = inspection.measurement_id
+        active_alert.title = title
+        active_alert.summary = summary
+        active_alert.recommended_action = recommended_action
+        active_alert.current_class = inspection.predicted_class
+        active_alert.current_confidence = inspection.confidence
+        active_alert.severity = severity
+        status_changed = desired_status != active_alert.status
+        inspection_changed = previous_inspection_id != inspection.id
+        if status_changed or inspection_changed:
+            create_alert_event(
+                session,
+                alert=active_alert,
+                user=user,
+                event_type="inspection_sync",
+                message=f"Alert синхронизирован с новой диагностической записью: {inspection.predicted_class}.",
+                inspection_id=inspection.id,
+                next_status=desired_status,
+                metadata={"source": "inspection_sync"},
+            )
+        else:
+            active_alert.updated_at = utcnow()
+            active_alert.last_event_at = active_alert.last_event_at or active_alert.updated_at
+            session.add(active_alert)
+        return active_alert
+
+    latest_for_inspection = get_latest_alert_for_inspection(session, user.id, inspection.id)
+    if latest_for_inspection and latest_for_inspection.status == "resolved":
+        return latest_for_inspection
+
+    alert = Alert(
+        user_id=user.id,
+        asset_id=asset.id,
+        inspection_id=inspection.id,
+        measurement_id=inspection.measurement_id,
+        alert_type="diagnostic",
+        severity=severity,
+        status=desired_status,
+        title=title,
+        summary=summary,
+        recommended_action=recommended_action,
+        current_class=inspection.predicted_class,
+        current_confidence=inspection.confidence,
+        last_event_at=inspection.updated_at or inspection.created_at,
+    )
+    session.add(alert)
+    session.flush()
+    create_alert_event(
+        session,
+        alert=alert,
+        user=user,
+        event_type="created",
+        message=f"Создан alert по диагностике {inspection.predicted_class}.",
+        inspection_id=inspection.id,
+        metadata={"source": "inspection_create"},
+    )
+    return alert
+
+
+def ensure_alerts_for_user(session: Session, user: User) -> None:
+    assets = session.exec(select(Asset).where(Asset.owner_id == user.id)).all()
+    for asset in assets:
+        latest = (
+            session.exec(
+                select(Inspection)
+                .where(Inspection.user_id == user.id, Inspection.asset_id == asset.id)
+                .order_by(Inspection.created_at.desc())
+            ).first()
+        )
+        if not latest:
+            continue
+        sync_alert_for_inspection(session, user, asset, latest)
 
 
 def set_session_cookie(response: Response, session_row: UserSession, raw_token: str) -> None:
@@ -695,20 +958,108 @@ def me(auth: tuple[User, UserSession] = Depends(get_current_auth)):
 @api.get("/dashboard/summary", response_model=DashboardSummary)
 def dashboard_summary(auth: tuple[User, UserSession] = Depends(get_current_auth), session: Session = Depends(get_session)):
     user, _ = auth
+    ensure_alerts_for_user(session, user)
+    session.commit()
     inspections = session.exec(
         select(Inspection).where(Inspection.user_id == user.id).order_by(Inspection.created_at.desc())
     ).all()
     assets = session.exec(select(Asset).where(Asset.owner_id == user.id)).all()
     reports = session.exec(select(Report).where(Report.user_id == user.id)).all()
     measurements = session.exec(select(Measurement).where(Measurement.user_id == user.id)).all()
+    alerts = session.exec(select(Alert).where(Alert.user_id == user.id)).all()
+    alert_events = session.exec(
+        select(AlertEvent).join(Alert, Alert.id == AlertEvent.alert_id).where(Alert.user_id == user.id)
+    ).all()
     latest = inspections[0].created_at if inspections else None
     return DashboardSummary(
         inspections=len(inspections),
         assets=len(assets),
         reports=len(reports),
         measurements=len(measurements),
+        alerts_active=len([item for item in alerts if item.status != "resolved"]),
+        alert_events=len(alert_events),
         latest_inspection_at=latest,
     )
+
+
+@api.get("/alerts", response_model=list[AlertRead])
+def list_alerts(
+    status_filter: str | None = None,
+    asset_id: str | None = None,
+    auth: tuple[User, UserSession] = Depends(get_current_auth),
+    session: Session = Depends(get_session),
+):
+    user, _ = auth
+    ensure_alerts_for_user(session, user)
+    session.commit()
+
+    statement = select(Alert).where(Alert.user_id == user.id)
+    if asset_id:
+        statement = statement.where(Alert.asset_id == asset_id)
+    if status_filter:
+        statement = statement.where(Alert.status == status_filter)
+    statement = statement.order_by(Alert.updated_at.desc())
+    alerts = session.exec(statement).all()
+    assets = {asset.id: asset for asset in session.exec(select(Asset).where(Asset.owner_id == user.id)).all()}
+    counts: dict[str, int] = {}
+    for event in session.exec(select(AlertEvent).join(Alert, Alert.id == AlertEvent.alert_id).where(Alert.user_id == user.id)).all():
+        counts[event.alert_id] = counts.get(event.alert_id, 0) + 1
+    alerts.sort(
+        key=lambda item: (
+            item.status == "resolved",
+            -(ALERT_SEVERITY_ORDER.get(item.severity, 0)),
+            -(item.last_event_at or item.updated_at).timestamp(),
+        )
+    )
+    return [serialize_alert(item, assets[item.asset_id], counts.get(item.id, 0)) for item in alerts if item.asset_id in assets]
+
+
+@api.get("/alerts/{alert_id}/events", response_model=list[AlertEventRead])
+def get_alert_events(
+    alert_id: str,
+    auth: tuple[User, UserSession] = Depends(get_current_auth),
+    session: Session = Depends(get_session),
+):
+    user, _ = auth
+    alert = session.get(Alert, alert_id)
+    if not alert or alert.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+    authors = {row.id: row for row in session.exec(select(User).where(User.id == user.id)).all()}
+    return [serialize_alert_event(item, authors.get(item.user_id)) for item in list_alert_events(session, user.id, alert_id)]
+
+
+@api.post("/alerts/{alert_id}/events", response_model=AlertRead)
+def create_alert_log_event(
+    alert_id: str,
+    payload: AlertEventCreate,
+    auth: tuple[User, UserSession] = Depends(get_current_auth),
+    session: Session = Depends(get_session),
+):
+    user, _ = auth
+    alert = session.get(Alert, alert_id)
+    if not alert or alert.user_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Alert not found")
+    asset = session.get(Asset, alert.asset_id)
+    if not asset or asset.owner_id != user.id:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Asset not found")
+    if payload.next_status and payload.next_status not in ALERT_STATUS_FLOW:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Unsupported alert status")
+    if not (payload.message or payload.next_status):
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Event must include a message or a status change")
+
+    create_alert_event(
+        session,
+        alert=alert,
+        user=user,
+        event_type=payload.event_type or "note",
+        message=payload.message or "Lifecycle updated.",
+        inspection_id=alert.inspection_id,
+        next_status=payload.next_status,
+        metadata=payload.metadata,
+    )
+    session.commit()
+    session.refresh(alert)
+    return serialize_alert(alert, asset, len(list_alert_events(session, user.id, alert.id)))
 
 
 @api.get("/assets", response_model=list[AssetRead])
@@ -877,9 +1228,14 @@ def delete_inspection(
     snapshots = session.exec(select(Snapshot).where(Snapshot.inspection_id == inspection.id)).all()
     reports = session.exec(select(Report).where(Report.inspection_id == inspection.id)).all()
     measurements = session.exec(select(Measurement).where(Measurement.inspection_id == inspection.id)).all()
+    alerts = session.exec(select(Alert).where(Alert.inspection_id == inspection.id, Alert.user_id == user.id)).all()
     for row in snapshots + reports:
         session.delete(row)
     for row in measurements:
+        row.inspection_id = None
+        row.updated_at = utcnow()
+        session.add(row)
+    for row in alerts:
         row.inspection_id = None
         row.updated_at = utcnow()
         session.add(row)
@@ -980,6 +1336,7 @@ def create_inspection(
         measurement.inspection_id = inspection.id
         measurement.updated_at = utcnow()
         session.add(measurement)
+    sync_alert_for_inspection(session, user, asset, inspection)
     session.commit()
     session.refresh(inspection)
     session.refresh(asset)
@@ -1031,6 +1388,7 @@ def update_inspection(
     inspection.updated_at = utcnow()
     session.add(inspection)
     session.add(asset)
+    sync_alert_for_inspection(session, user, asset, inspection)
     session.commit()
     session.refresh(inspection)
     session.refresh(asset)
@@ -1219,6 +1577,7 @@ def import_local_history(
             created_at=created_at,
         )
         session.add(snapshot)
+        sync_alert_for_inspection(session, user, asset, inspection)
         session.commit()
         imported_count += 1
     return ImportLocalHistoryResponse(imported_count=imported_count, asset_count=len(touched_assets))

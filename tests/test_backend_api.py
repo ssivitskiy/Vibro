@@ -99,6 +99,19 @@ def test_auth_and_server_history_flow(tmp_path):
     assert len(history.json()) == 2
     assert any(item["is_baseline"] for item in history.json())
 
+    alerts = client.get("/api/alerts")
+    assert alerts.status_code == 200, alerts.text
+    assert len(alerts.json()) == 1
+    alert = alerts.json()[0]
+    assert alert["asset_name"] == "Gearbox A-01"
+    assert alert["status"] == "new"
+    assert alert["current_class"] == "tooth_miss"
+
+    alert_events = client.get(f"/api/alerts/{alert['id']}/events")
+    assert alert_events.status_code == 200, alert_events.text
+    assert len(alert_events.json()) == 1
+    assert alert_events.json()[0]["event_type"] == "created"
+
     updated = client.patch(
         f"/api/inspections/{inspection['id']}",
         json={
@@ -112,6 +125,28 @@ def test_auth_and_server_history_flow(tmp_path):
     updated_payload = updated.json()
     assert updated_payload["state_key"] == "service"
     assert updated_payload["work_status"] == "repair"
+
+    alerts_after_service = client.get("/api/alerts")
+    assert alerts_after_service.status_code == 200
+    alert_after_service = alerts_after_service.json()[0]
+    assert alert_after_service["status"] == "in_progress"
+    assert alert_after_service["events_count"] >= 2
+
+    resolved = client.post(
+        f"/api/alerts/{alert_after_service['id']}/events",
+        json={
+            "event_type": "resolve",
+            "next_status": "resolved",
+            "message": "Ремонт завершён, контрольная запись подтверждает закрытие alert-а.",
+        },
+    )
+    assert resolved.status_code == 200, resolved.text
+    assert resolved.json()["status"] == "resolved"
+
+    resolved_events = client.get(f"/api/alerts/{alert_after_service['id']}/events")
+    assert resolved_events.status_code == 200
+    assert resolved_events.json()[0]["to_status"] == "resolved"
+    assert "закрытие" in resolved_events.json()[0]["message"].lower()
 
     create_snapshot = client.post(
         "/api/snapshots",
@@ -145,6 +180,8 @@ def test_auth_and_server_history_flow(tmp_path):
     assert summary.json()["assets"] == 1
     assert summary.json()["reports"] == 1
     assert summary.json()["measurements"] == 0
+    assert summary.json()["alerts_active"] == 0
+    assert summary.json()["alert_events"] >= 3
 
 
 def test_import_legacy_history_and_delete(tmp_path):

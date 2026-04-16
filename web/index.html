@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#060a12">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>Vibro — Система вибродиагностики</title>
-  <link rel="stylesheet" href="css/style.css?v=20260411-profile-health-alerts-13">
+  <link rel="stylesheet" href="css/style.css?v=20260416-alert-lifecycle-14">
 </head>
 <body data-mode="defense">
 <a href="#page-home" class="skip-link">Перейти к содержанию</a>
@@ -866,6 +866,58 @@
         </div>
       </div>
 
+      <div class="workspace-panel workspace-panel--alert-log" id="profileAlertLogPanel">
+        <div class="workspace-panel-head">
+          <div>
+            <div class="card-title">ALERT LIFECYCLE И ACTION LOG</div>
+            <p class="workspace-copy">
+              Для выбранного alert-а можно подтвердить статус, перевести его в работу, закрыть после обслуживания и зафиксировать инженерное действие отдельной записью в журнале событий.
+            </p>
+          </div>
+          <span class="workspace-badge">WORKFLOW</span>
+        </div>
+
+        <div class="profile-alert-log-summary" id="profileAlertLogSummary"></div>
+
+        <form class="profile-alert-log-form" id="profileAlertEventForm">
+          <div class="workspace-form-grid">
+            <label class="workspace-field">
+              <span>Тип события</span>
+              <select id="alertEventTypeInput">
+                <option value="note">Комментарий</option>
+                <option value="acknowledge">Подтверждение</option>
+                <option value="work">Работа по alert-у</option>
+                <option value="resolve">Закрытие</option>
+              </select>
+            </label>
+            <label class="workspace-field">
+              <span>Следующий статус</span>
+              <select id="alertNextStatusInput">
+                <option value="">Без смены статуса</option>
+                <option value="new">New</option>
+                <option value="acknowledged">Acknowledged</option>
+                <option value="in_progress">In progress</option>
+                <option value="resolved">Resolved</option>
+              </select>
+            </label>
+          </div>
+          <label class="workspace-field workspace-field--stacked">
+            <span>Комментарий инженера / выполненное действие</span>
+            <textarea id="alertEventMessageInput" rows="3" placeholder="Например: alert подтверждён, узел отправлен в ремонт, назначена контрольная проверка после обслуживания."></textarea>
+          </label>
+          <div class="workspace-actions">
+            <button class="btn btn-primary" type="submit" id="alertEventSubmitBtn">СОХРАНИТЬ СОБЫТИЕ</button>
+            <button class="btn" type="button" id="alertOpenCompareBtn">ОТКРЫТЬ СРАВНЕНИЕ</button>
+            <button class="btn" type="button" id="alertOpenJournalBtn">К ЖУРНАЛУ</button>
+          </div>
+        </form>
+
+        <div class="workspace-empty" id="profileAlertLogEmpty">
+          Выберите alert из списка выше, чтобы увидеть его lifecycle и историю действий.
+        </div>
+        <div class="profile-alert-event-list" id="profileAlertEventList"></div>
+      </div>
+
       <div class="workspace-grid">
         <div class="workspace-panel workspace-panel--profile" id="authPanel">
           <div class="workspace-panel-head">
@@ -1478,7 +1530,7 @@
 <script src="js/converter.js?v=20260411-upload-window-fix-9"></script>
 <script src="js/sensor.js?v=20260410-fft-fix"></script>
 <script src="js/viz.js?v=20260410-fft-fix"></script>
-<script src="js/app.js?v=20260411-profile-health-alerts-13"></script>
+<script src="js/app.js?v=20260416-alert-lifecycle-14"></script>
 <!-- Notification toast container -->
 <div id="toastContainer" class="toast-container"></div>
 </body>

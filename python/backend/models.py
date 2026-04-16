@@ -133,3 +133,35 @@ class Report(SQLModel, table=True):
     payload_json: str = Field(default="{}", sa_column=Column(Text, nullable=False))
     created_at: datetime = Field(default_factory=utcnow)
     updated_at: datetime = Field(default_factory=utcnow)
+
+
+class Alert(SQLModel, table=True):
+    id: str = Field(default_factory=new_id, primary_key=True)
+    user_id: str = Field(index=True, foreign_key="user.id")
+    asset_id: str = Field(index=True, foreign_key="asset.id")
+    inspection_id: str | None = Field(default=None, index=True, foreign_key="inspection.id")
+    measurement_id: str | None = Field(default=None, index=True, foreign_key="measurement.id")
+    alert_type: str = Field(default="diagnostic")
+    severity: str = Field(default="medium")
+    status: str = Field(default="new")
+    title: str
+    summary: str = Field(default="")
+    recommended_action: str = Field(default="")
+    current_class: str | None = None
+    current_confidence: float = Field(default=0.0)
+    last_event_at: datetime = Field(default_factory=utcnow)
+    created_at: datetime = Field(default_factory=utcnow)
+    updated_at: datetime = Field(default_factory=utcnow)
+
+
+class AlertEvent(SQLModel, table=True):
+    id: str = Field(default_factory=new_id, primary_key=True)
+    alert_id: str = Field(index=True, foreign_key="alert.id")
+    user_id: str = Field(index=True, foreign_key="user.id")
+    inspection_id: str | None = Field(default=None, index=True, foreign_key="inspection.id")
+    event_type: str = Field(default="note")
+    from_status: str | None = None
+    to_status: str | None = None
+    message: str = Field(default="")
+    metadata_json: str = Field(default="{}", sa_column=Column(Text, nullable=False))
+    created_at: datetime = Field(default_factory=utcnow)

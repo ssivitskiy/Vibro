@@ -181,6 +181,8 @@ class DashboardSummary(BaseModel):
     assets: int
     reports: int
     measurements: int = 0
+    alerts_active: int = 0
+    alert_events: int = 0
     latest_inspection_at: datetime | None = None
 
 
@@ -228,3 +230,43 @@ class MeasurementRead(BaseModel):
     download_url: str
     created_at: datetime
     updated_at: datetime
+
+
+class AlertRead(BaseModel):
+    id: str
+    asset_id: str
+    asset_name: str
+    inspection_id: str | None
+    measurement_id: str | None
+    alert_type: str
+    severity: str
+    status: str
+    title: str
+    summary: str
+    recommended_action: str
+    current_class: str | None
+    current_confidence: float
+    events_count: int = 0
+    last_event_at: datetime | None = None
+    created_at: datetime
+    updated_at: datetime
+
+
+class AlertEventCreate(BaseModel):
+    event_type: str = "note"
+    next_status: str | None = None
+    message: str = ""
+    metadata: dict[str, Any] = Field(default_factory=dict)
+
+
+class AlertEventRead(BaseModel):
+    id: str
+    alert_id: str
+    inspection_id: str | None
+    event_type: str
+    from_status: str | None
+    to_status: str | None
+    message: str
+    metadata: dict[str, Any]
+    author_name: str
+    created_at: datetime

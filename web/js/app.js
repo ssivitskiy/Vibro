@@ -14,6 +14,9 @@ const App = (() => {
   let assetRegistry = [];
   let measurementRegistry = [];
   let reportRegistry = [];
+  let alertRegistry = [];
+  let alertEventRegistry = {};
+  let selectedAlertId = null;
   let apiReady = false;
   let dashboardSummary = null;
   let selectedAssetId = null;
@@ -28,7 +31,7 @@ const App = (() => {
   let assetStatusFilter = 'all';
   let assetRiskFilter = 'all';
   let assetSortMode = 'priority';
-  const ASSET_VERSION = '20260411-profile-health-alerts-13';
+  const ASSET_VERSION = '20260416-alert-lifecycle-14';
   const STORAGE_KEYS = {
     legacyAuth: 'vm_local_auth_v1',
     legacySessions: 'vm_local_sessions_v1',
@@ -66,6 +69,12 @@ const App = (() => {
     medium: { key: 'medium', label: 'Medium risk', tone: 'warning', note: 'Есть признаки деградации, но ситуация ещё контролируема.' },
     high: { key: 'high', label: 'High risk', tone: 'warning', note: 'Нужен ремонт или сокращение интервала эксплуатации.' },
     critical: { key: 'critical', label: 'Critical risk', tone: 'critical', note: 'Требуется немедленное вмешательство и жёсткий контроль.' },
+  };
+  const ALERT_STATUSES = {
+    new: { label: 'New', tone: 'critical', note: 'Новый alert пока не подтверждён инженером.' },
+    acknowledged: { label: 'Acknowledged', tone: 'warning', note: 'Alert подтверждён и ожидает инженерного действия.' },
+    in_progress: { label: 'In progress', tone: 'info', note: 'По alert-у уже идёт работа или ремонтный цикл.' },
+    resolved: { label: 'Resolved', tone: 'good', note: 'Alert закрыт после выполненного действия или контрольной записи.' },
   };
   const PLAYBOOK = {
     normal: {
@@ -240,6 +249,43 @@ const App = (() => {
       }));
   }
 
+  function normalizeAlerts(list) {
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((item) => item && item.id)
+      .map((item) => ({
+        ...item,
+        assetId: item.assetId || item.asset_id || null,
+        assetName: item.assetName || item.asset_name || 'Не указан объект',
+        inspectionId: item.inspectionId || item.inspection_id || null,
+        measurementId: item.measurementId || item.measurement_id || null,
+        alertType: item.alertType || item.alert_type || 'diagnostic',
+        currentClass: item.currentClass || item.current_class || null,
+        currentConfidence: item.currentConfidence || item.current_confidence || 0,
+        eventsCount: item.eventsCount || item.events_count || 0,
+        lastEventAt: item.lastEventAt || item.last_event_at || item.updated_at || item.updatedAt || null,
+        createdAt: item.createdAt || item.created_at || null,
+        updatedAt: item.updatedAt || item.updated_at || null,
+      }))
+      .sort((a, b) => new Date(b.lastEventAt || b.updatedAt || 0).getTime() - new Date(a.lastEventAt || a.updatedAt || 0).getTime());
+  }
+
+  function normalizeAlertEvents(list) {
+    if (!Array.isArray(list)) return [];
+    return list
+      .filter((item) => item && item.id)
+      .map((item) => ({
+        ...item,
+        alertId: item.alertId || item.alert_id || null,
+        inspectionId: item.inspectionId || item.inspection_id || null,
+        fromStatus: item.fromStatus || item.from_status || null,
+        toStatus: item.toStatus || item.to_status || null,
+        authorName: item.authorName || item.author_name || 'Unknown user',
+        createdAt: item.createdAt || item.created_at || null,
+      }))
+      .sort((a, b) => new Date(b.createdAt || 0).getTime() - new Date(a.createdAt || 0).getTime());
+  }
+
   function normalizeMeasurements(list) {
     if (!Array.isArray(list)) return [];
     return list
@@ -359,22 +405,36 @@ const App = (() => {
       assetRegistry = [];
       measurementRegistry = [];
       reportRegistry = [];
+      alertRegistry = [];
+      alertEventRegistry = {};
+      selectedAlertId = null;
       dashboardSummary = null;
       syncWorkspaceSelection();
       renderWorkspace();
       return [];
     }
-    const [history, summary, assets, reports, measurements] = await Promise.all([
+    const [history, summary, assets, reports, measurements, alerts] = await Promise.all([
       apiRequest('/inspections'),
       apiRequest('/dashboard/summary'),
       apiRequest('/assets'),
       apiRequest('/reports'),
       apiRequest('/measurements'),
+      apiRequest('/alerts'),
     ]);
     sessionHistory = normalizeHistory(history);
     assetRegistry = normalizeAssets(assets);
     measurementRegistry = normalizeMeasurements(measurements);
     reportRegistry = normalizeReports(reports);
+    alertRegistry = normalizeAlerts(alerts);
+    selectedAlertId = alertRegistry[0]?.id || null;
+    alertEventRegistry = {};
+    if (selectedAlertId) {
+      try {
+        await loadAlertEvents(selectedAlertId, { force: true });
+      } catch (e) {
+        console.warn('[APP] alert events preload failed:', e);
+      }
+    }
     dashboardSummary = summary;
     syncWorkspaceSelection();
     renderAuthSummary();
@@ -457,6 +517,55 @@ const App = (() => {
 
   function getWorkStatusMeta(key) {
     return WORK_STATUSES[trimText(key)] || WORK_STATUSES.observe;
+  }
+
+  function getAlertStatusMeta(key) {
+    return ALERT_STATUSES[trimText(key)] || ALERT_STATUSES.new;
+  }
+
+  function getAlertSeverityTone(severity) {
+    const value = trimText(severity);
+    if (value === 'critical') return 'critical';
+    if (value === 'high' || value === 'medium') return 'warning';
+    if (value === 'low') return 'good';
+    return 'info';
+  }
+
+  function getAlertSeverityLabel(severity) {
+    const value = trimText(severity);
+    const labels = {
+      low: 'Low severity',
+      medium: 'Medium severity',
+      high: 'High severity',
+      critical: 'Critical severity',
+    };
+    return labels[value] || 'Severity';
+  }
+
+  function getAlertNextStatus(status) {
+    const map = {
+      new: 'acknowledged',
+      acknowledged: 'in_progress',
+      in_progress: 'resolved',
+      resolved: 'acknowledged',
+    };
+    return map[trimText(status)] || 'acknowledged';
+  }
+
+  function getAlertById(alertId) {
+    return alertRegistry.find((item) => item.id === alertId) || null;
+  }
+
+  async function loadAlertEvents(alertId, { force = false } = {}) {
+    if (!apiReady || !authState?.id || !alertId) return [];
+    if (!force && alertEventRegistry[alertId]) return alertEventRegistry[alertId];
+    const events = await apiRequest(`/alerts/${alertId}/events`);
+    const normalized = normalizeAlertEvents(events);
+    alertEventRegistry = {
+      ...alertEventRegistry,
+      [alertId]: normalized,
+    };
+    return normalized;
   }
 
   function getRiskMeta(session, fallbackStateKey = 'warning') {
@@ -965,6 +1074,10 @@ const App = (() => {
           <div class="workspace-summary-label">ИЗМЕРЕНИЙ</div>
           <div class="workspace-summary-value">${dashboardSummary?.measurements ?? measurementRegistry.length}</div>
         </div>
+        <div class="workspace-summary-card">
+          <div class="workspace-summary-label">АКТИВНЫХ ALERT-ОВ</div>
+          <div class="workspace-summary-value">${dashboardSummary?.alerts_active ?? alertRegistry.filter(item => item.status !== 'resolved').length}</div>
+        </div>
       </div>
       ${hasLegacySessions() && !isLegacyImportDone() ? `
         <div style="margin-top:12px;font-size:12px;color:#c6d1de;line-height:1.7">
@@ -1063,6 +1176,52 @@ const App = (() => {
       </div>
     `;
 
+    const serverAlerts = [...alertRegistry].sort((a, b) => {
+      const statusScoreA = a.status === 'resolved' ? 0 : 1;
+      const statusScoreB = b.status === 'resolved' ? 0 : 1;
+      if (statusScoreA !== statusScoreB) return statusScoreB - statusScoreA;
+      const severityA = ALERT_SEVERITY_ORDER[a.severity] || 0;
+      const severityB = ALERT_SEVERITY_ORDER[b.severity] || 0;
+      if (severityA !== severityB) return severityB - severityA;
+      return new Date(b.lastEventAt || b.updatedAt || 0).getTime() - new Date(a.lastEventAt || a.updatedAt || 0).getTime();
+    });
+
+    if (serverAlerts.length) {
+      if (!getAlertById(selectedAlertId)) selectedAlertId = serverAlerts[0].id;
+      alertEmptyNode.style.display = 'none';
+      alertListNode.innerHTML = serverAlerts.slice(0, 6).map((alert) => {
+        const statusMeta = getAlertStatusMeta(alert.status);
+        const severityTone = getAlertSeverityTone(alert.severity);
+        const nextStatus = getAlertNextStatus(alert.status);
+        const nextStatusMeta = getAlertStatusMeta(nextStatus);
+        const diagnosis = alert.currentClass ? (VM.RU[alert.currentClass] || alert.currentClass) : 'Диагноз не привязан';
+        const overview = overviews.find((item) => item.asset.id === alert.assetId) || null;
+        const healthLine = overview ? `Health ${overview.healthScore}/100 · ${overview.healthTrend.label}` : 'Health trend ещё не рассчитан';
+        return `
+          <article class="profile-alert-item profile-alert-item--${severityTone} ${selectedAlertId === alert.id ? 'is-active' : ''}" data-alert-id="${escapeHtml(alert.id)}">
+            <div class="profile-alert-head">
+              <div>
+                <div class="profile-alert-title">${escapeHtml(alert.title)}</div>
+                <div class="profile-alert-copy">${escapeHtml(diagnosis)} · ${escapeHtml(alert.summary)}</div>
+              </div>
+              <div class="history-badge-stack">
+                <span class="health-badge health-badge--${severityTone}"><span class="dot"></span>${escapeHtml(getAlertSeverityLabel(alert.severity))}</span>
+                <span class="health-badge health-badge--${statusMeta.tone}"><span class="dot"></span>${escapeHtml(statusMeta.label)}</span>
+              </div>
+            </div>
+            <div class="profile-alert-note">${escapeHtml(alert.recommended_action || healthLine)}</div>
+            <div class="profile-alert-actions">
+              <button class="history-btn" type="button" data-profile-alert-action="select-alert" data-alert-id="${escapeHtml(alert.id)}" data-asset-id="${escapeHtml(alert.assetId)}">ОТКРЫТЬ LOG</button>
+              <button class="history-btn" type="button" data-profile-alert-action="advance-status" data-alert-id="${escapeHtml(alert.id)}" data-next-status="${escapeHtml(nextStatus)}" data-asset-id="${escapeHtml(alert.assetId)}">${escapeHtml(nextStatusMeta.label)}</button>
+              <button class="history-btn" type="button" data-profile-alert-action="open-compare" data-alert-id="${escapeHtml(alert.id)}" data-asset-id="${escapeHtml(alert.assetId)}" ${alert.inspectionId ? `data-inspection-id="${escapeHtml(alert.inspectionId)}"` : ''}>СРАВНЕНИЕ</button>
+              <button class="history-btn" type="button" data-profile-alert-action="open-journal" data-alert-id="${escapeHtml(alert.id)}" data-asset-id="${escapeHtml(alert.assetId)}" ${alert.inspectionId ? `data-inspection-id="${escapeHtml(alert.inspectionId)}"` : ''}>ЖУРНАЛ</button>
+            </div>
+          </article>
+        `;
+      }).join('');
+      return;
+    }
+
     const alerts = overviews
       .map(buildProfileAlert)
       .filter(Boolean)
@@ -1076,6 +1235,7 @@ const App = (() => {
       return;
     }
 
+    selectedAlertId = null;
     alertEmptyNode.style.display = 'none';
     alertListNode.innerHTML = alerts.map((alert) => `
       <article class="profile-alert-item profile-alert-item--${alert.tone}">
@@ -1095,6 +1255,89 @@ const App = (() => {
     `).join('');
   }
 
+  function renderAlertLifecyclePanel() {
+    const summaryNode = el('profileAlertLogSummary');
+    const listNode = el('profileAlertEventList');
+    const emptyNode = el('profileAlertLogEmpty');
+    const form = el('profileAlertEventForm');
+    const submitBtn = el('alertEventSubmitBtn');
+    const compareBtn = el('alertOpenCompareBtn');
+    const journalBtn = el('alertOpenJournalBtn');
+    if (!summaryNode || !listNode || !emptyNode || !form || !submitBtn || !compareBtn || !journalBtn) return;
+
+    if (!apiReady || !authState?.id) {
+      form.style.display = 'none';
+      emptyNode.style.display = 'block';
+      emptyNode.textContent = 'Войдите в аккаунт, чтобы вести lifecycle alert-ов и журнал действий.';
+      summaryNode.innerHTML = '';
+      listNode.innerHTML = '';
+      return;
+    }
+
+    const alert = getAlertById(selectedAlertId);
+    if (!alert) {
+      form.style.display = 'none';
+      emptyNode.style.display = 'block';
+      emptyNode.textContent = 'Выберите alert из списка выше, чтобы увидеть его lifecycle и историю действий.';
+      summaryNode.innerHTML = '';
+      listNode.innerHTML = '';
+      return;
+    }
+
+    const statusMeta = getAlertStatusMeta(alert.status);
+    const severityTone = getAlertSeverityTone(alert.severity);
+    const diagnosis = alert.currentClass ? (VM.RU[alert.currentClass] || alert.currentClass) : 'Диагноз не привязан';
+    const events = alertEventRegistry[alert.id] || [];
+    form.style.display = 'block';
+    emptyNode.style.display = events.length ? 'none' : 'block';
+    emptyNode.textContent = 'По этому alert-у пока нет action log. Сохраните первое инженерное событие ниже.';
+    submitBtn.disabled = false;
+    compareBtn.disabled = !alert.inspectionId;
+    journalBtn.disabled = false;
+    if (el('alertEventTypeInput')) el('alertEventTypeInput').value = 'note';
+    if (el('alertNextStatusInput')) el('alertNextStatusInput').value = getAlertNextStatus(alert.status);
+
+    summaryNode.innerHTML = `
+      <div class="profile-alert-log-card">
+        <div class="profile-alert-log-head">
+          <div>
+            <div class="profile-alert-log-title">${escapeHtml(alert.title)}</div>
+            <div class="profile-alert-log-copy">${escapeHtml(diagnosis)} · ${escapeHtml(alert.summary)}</div>
+          </div>
+          <div class="history-badge-stack">
+            <span class="health-badge health-badge--${severityTone}"><span class="dot"></span>${escapeHtml(getAlertSeverityLabel(alert.severity))}</span>
+            <span class="health-badge health-badge--${statusMeta.tone}"><span class="dot"></span>${escapeHtml(statusMeta.label)}</span>
+          </div>
+        </div>
+        <div class="profile-alert-status-row">
+          <span class="health-badge"><span class="dot"></span>${escapeHtml(alert.assetName)}</span>
+          <span class="health-badge"><span class="dot"></span>${escapeHtml(alert.recommended_action || 'Без рекомендации')}</span>
+          <span class="health-badge"><span class="dot"></span>${alert.eventsCount} событий</span>
+        </div>
+      </div>
+    `;
+
+    listNode.innerHTML = events.map((event) => {
+      const fromMeta = event.fromStatus ? getAlertStatusMeta(event.fromStatus) : null;
+      const toMeta = event.toStatus ? getAlertStatusMeta(event.toStatus) : null;
+      const transition = fromMeta || toMeta
+        ? `${fromMeta ? fromMeta.label : 'Создание'}${toMeta ? ` → ${toMeta.label}` : ''}`
+        : 'Комментарий';
+      return `
+        <article class="profile-alert-event">
+          <div class="profile-alert-event-head">
+            <div>
+              <div class="profile-alert-event-title">${escapeHtml(event.eventType || event.event_type || 'note')} · ${escapeHtml(transition)}</div>
+              <div class="profile-alert-event-meta">${escapeHtml(formatStamp(event.createdAt))} · ${escapeHtml(event.authorName || authState?.name || 'Unknown')}</div>
+            </div>
+            ${toMeta ? `<span class="health-badge health-badge--${toMeta.tone}"><span class="dot"></span>${escapeHtml(toMeta.label)}</span>` : ''}
+          </div>
+          <div class="profile-alert-event-note">${escapeHtml(event.message || 'Без комментария.')}</div>
+        </article>
+      `;
+    }).join('');
+  }
+
   function renderHistoryStats() {
     const node = el('historyStats');
     if (!node) return;
@@ -1106,6 +1349,7 @@ const App = (() => {
       <span class="workspace-stat-pill">${assetCount} узлов</span>
       <span class="workspace-stat-pill">${measurementRegistry.length} измерений</span>
       <span class="workspace-stat-pill">${reportRegistry.length} отчётов</span>
+      <span class="workspace-stat-pill">${alertRegistry.filter(item => item.status !== 'resolved').length} активных alert-ов</span>
       <span class="workspace-stat-pill">Обновлено ${escapeHtml(latest)}</span>
     `;
   }
@@ -1310,6 +1554,7 @@ const App = (() => {
 
   function renderWorkspace() {
     renderProfileHealthOverview();
+    renderAlertLifecyclePanel();
     renderHistory();
     renderAnalysisComparePanel();
     renderMonitoringFeed();
@@ -2459,6 +2704,44 @@ const App = (() => {
     window.setTimeout(() => el('analysisComparePanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
   }
 
+  async function selectAlert(alertId, { force = false, scroll = false } = {}) {
+    if (!alertId) return;
+    selectedAlertId = alertId;
+    try {
+      await loadAlertEvents(alertId, { force });
+    } catch (e) {
+      toast('Не удалось загрузить log', e.message || 'Ошибка при загрузке action log.', 'warning');
+    }
+    renderWorkspace();
+    if (scroll) {
+      goPage('profile');
+      window.setTimeout(() => el('profileAlertLogPanel')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 120);
+    }
+  }
+
+  async function saveAlertEvent(alertId, payload, successMessage = 'Lifecycle обновлён') {
+    if (!apiReady || !authState?.id) {
+      toast('Нужен вход', 'Alert lifecycle работает только в серверном кабинете.', 'warning');
+      return null;
+    }
+    const updated = await apiRequest(`/alerts/${alertId}/events`, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    const normalized = normalizeAlerts([updated])[0];
+    alertRegistry = [normalized, ...alertRegistry.filter((item) => item.id !== normalized.id)];
+    selectedAlertId = normalized.id;
+    await loadAlertEvents(normalized.id, { force: true });
+    dashboardSummary = dashboardSummary ? {
+      ...dashboardSummary,
+      alerts_active: alertRegistry.filter((item) => item.status !== 'resolved').length,
+      alert_events: (dashboardSummary.alert_events || 0) + 1,
+    } : dashboardSummary;
+    renderWorkspace();
+    toast(successMessage, normalized.title, 'success');
+    return normalized;
+  }
+
   function guessMeasurementMimeType(name = '') {
     const lower = trimText(name).toLowerCase();
     if (lower.endsWith('.csv') || lower.endsWith('.txt') || lower.endsWith('.tsv') || lower.endsWith('.dat')) return 'text/plain';
@@ -2994,6 +3277,9 @@ const App = (() => {
     assetRegistry = [];
     measurementRegistry = [];
     reportRegistry = [];
+    alertRegistry = [];
+    alertEventRegistry = {};
+    selectedAlertId = null;
     dashboardSummary = null;
     selectedAssetId = null;
     compareBaselineId = null;
@@ -3065,12 +3351,38 @@ const App = (() => {
       }
     });
     el('profileAlertList')?.addEventListener('click', (event) => {
+      const card = event.target.closest('[data-alert-id]');
+      if (card && !event.target.closest('button')) {
+        selectAlert(card.dataset.alertId, { scroll: true }).catch((e) => {
+          toast('Не удалось открыть log', e.message || 'Ошибка при загрузке событий alert-а.', 'warning');
+        });
+        return;
+      }
       const button = event.target.closest('[data-profile-alert-action][data-asset-id]');
       if (!button) return;
       const assetId = button.dataset.assetId;
+      const alertId = button.dataset.alertId || null;
       const inspectionId = button.dataset.inspectionId || null;
       const measurementId = button.dataset.measurementId || null;
+      const nextStatus = button.dataset.nextStatus || null;
       const action = button.dataset.profileAlertAction;
+      if (action === 'select-alert' && alertId) {
+        selectAlert(alertId, { scroll: true }).catch((e) => {
+          toast('Не удалось открыть log', e.message || 'Ошибка при загрузке событий alert-а.', 'warning');
+        });
+        return;
+      }
+      if (action === 'advance-status' && alertId && nextStatus) {
+        const nextMeta = getAlertStatusMeta(nextStatus);
+        saveAlertEvent(alertId, {
+          event_type: 'status_change',
+          next_status: nextStatus,
+          message: `Статус alert-а переведён в ${nextMeta.label}.`,
+        }, 'Lifecycle обновлён').catch((e) => {
+          toast('Не удалось обновить alert', e.message || 'Ошибка при обновлении статуса alert-а.', 'error');
+        });
+        return;
+      }
       if (action === 'open-journal') {
         focusProfileAsset(assetId, 'journalPanel');
         return;
@@ -3106,6 +3418,50 @@ const App = (() => {
       if (action === 'open-measurement' && measurementId) {
         openMeasurementInAnalysis(measurementId);
       }
+    });
+    el('alertEventTypeInput')?.addEventListener('change', (event) => {
+      const nextNode = el('alertNextStatusInput');
+      if (!nextNode) return;
+      const eventType = event.target.value || 'note';
+      if (eventType === 'acknowledge') nextNode.value = 'acknowledged';
+      if (eventType === 'work') nextNode.value = 'in_progress';
+      if (eventType === 'resolve') nextNode.value = 'resolved';
+    });
+    el('alertEventForm')?.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const alert = getAlertById(selectedAlertId);
+      if (!alert) {
+        toast('Alert не выбран', 'Сначала выберите alert в верхнем списке.', 'warning');
+        return;
+      }
+      const eventType = trimText(el('alertEventTypeInput')?.value) || 'note';
+      const nextStatus = trimText(el('alertNextStatusInput')?.value) || null;
+      const message = trimText(el('alertEventMessageInput')?.value);
+      saveAlertEvent(alert.id, {
+        event_type: eventType,
+        next_status: nextStatus,
+        message,
+      }, 'Событие сохранено').then(() => {
+        if (el('alertEventMessageInput')) el('alertEventMessageInput').value = '';
+      }).catch((e) => {
+        toast('Не удалось сохранить событие', e.message || 'Ошибка при записи lifecycle-события.', 'error');
+      });
+    });
+    el('alertOpenCompareBtn')?.addEventListener('click', () => {
+      const alert = getAlertById(selectedAlertId);
+      if (!alert?.assetId) {
+        toast('Alert не выбран', 'Сначала выберите alert из списка.', 'warning');
+        return;
+      }
+      focusProfileCompare(alert.assetId, 'baseline_saved', alert.inspectionId);
+    });
+    el('alertOpenJournalBtn')?.addEventListener('click', () => {
+      const alert = getAlertById(selectedAlertId);
+      if (!alert?.assetId) {
+        toast('Alert не выбран', 'Сначала выберите alert из списка.', 'warning');
+        return;
+      }
+      focusProfileAsset(alert.assetId, 'journalPanel');
     });
     ['assetNameInput', 'sessionNoteInput', 'engineerReasonInput', 'actionTakenInput'].forEach((id) => {
       el(id)?.addEventListener('input', renderCaptureSummary);
