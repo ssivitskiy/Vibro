@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#060a12">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>Vibro — Система вибродиагностики</title>
-  <link rel="stylesheet" href="css/style.css?v=20260417-product-copy-18">
+  <link rel="stylesheet" href="css/style.css?v=20260419-ux-pass">
 </head>
 <body data-mode="product">
 <a href="#page-home" class="skip-link">Перейти к содержанию</a>
@@ -65,16 +65,18 @@
         <h1 class="hero-title">VIBRO</h1>
         <div class="hero-tagline">От вибросигнала к объяснимому диагнозу</div>
         <p class="hero-desc">
-          Vibro — платформа вибродиагностики для редукторов и подшипников. Она принимает сырой вибросигнал,
-          извлекает физически интерпретируемые признаки, строит спектральные доказательства и возвращает
-          объяснимый диагноз прямо в браузере вместе с рабочим кабинетом и 3D-визуализацией дефекта.
+          Загружаете сигнал редуктора или подшипника — платформа считает признаки, строит FFT и сразу показывает
+          диагноз с пояснением. Всё работает в браузере, без установки.
         </p>
         <div class="hero-actions">
-          <button class="btn btn-primary" onclick="goHomeSection('section-problem')">ВОЗМОЖНОСТИ</button>
-          <button class="btn" onclick="goPage('diag')">⚡ АНАЛИЗ</button>
-          <a href="simulator.html" class="btn" style="text-decoration:none;display:inline-flex;align-items:center">🎮 3D
-            СИМУЛЯТОР</a>
-          <button class="btn" onclick="goHomeSection('section-conclusion')">ВЫВОДЫ →</button>
+          <button class="btn btn-primary btn-cta" onclick="goPage('diag')">
+            <span class="btn-cta-icon" aria-hidden="true">⚡</span>
+            ПОПРОБОВАТЬ АНАЛИЗ
+          </button>
+          <a href="simulator.html" class="btn btn-ghost" style="text-decoration:none;display:inline-flex;align-items:center;gap:8px">
+            <span aria-hidden="true">🎮</span> 3D-СИМУЛЯТОР
+          </a>
+          <button class="btn btn-ghost" onclick="goHomeSection('section-quickstart')">КАК ПОЛЬЗОВАТЬСЯ →</button>
         </div>
         <div class="hero-proof">
           <div class="hero-proof-card">
@@ -185,6 +187,48 @@
               </button>
             </div>
           </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section--quickstart" id="section-quickstart">
+    <div class="container">
+      <div class="quickstart-header">
+        <div class="label">КАК НАЧАТЬ</div>
+        <h2 class="quickstart-title">Первый раз здесь? Разберётесь за пару минут</h2>
+        <p class="quickstart-lead">
+          Vibro устроен как учебный стенд: попробуйте готовый кейс, потом загрузите свой сигнал и сохраните результат в кабинете.
+        </p>
+      </div>
+      <div class="quickstart-grid">
+        <button class="quickstart-card" type="button" onclick="goPage('diag')">
+          <span class="quickstart-num">01</span>
+          <strong class="quickstart-card-title">Запустите готовый кейс</strong>
+          <p class="quickstart-card-desc">Откроется страница анализа и сразу проиграется сигнал «отсутствие зуба» — увидите, как модель ставит диагноз.</p>
+          <span class="quickstart-cta">ПОПРОБОВАТЬ КЕЙС →</span>
+        </button>
+        <button class="quickstart-card" type="button" onclick="goPage('diag')">
+          <span class="quickstart-num">02</span>
+          <strong class="quickstart-card-title">Загрузите свой файл</strong>
+          <p class="quickstart-card-desc">Поддерживаются SEU TXT, WAV, CSV, MAT, NPY, UFF. После загрузки появятся временной сигнал, FFT, признаки и диагноз.</p>
+          <span class="quickstart-cta">К ЗАГРУЗКЕ →</span>
+        </button>
+        <button class="quickstart-card" type="button" onclick="goPage('profile')">
+          <span class="quickstart-num">03</span>
+          <strong class="quickstart-card-title">Сохраните результат</strong>
+          <p class="quickstart-card-desc">В профиле появится история сеансов, сравнение с эталоном и alerts — удобно вести лабораторный журнал.</p>
+          <span class="quickstart-cta">ОТКРЫТЬ ПРОФИЛЬ →</span>
+        </button>
+      </div>
+      <div class="quickstart-tips">
+        <div class="quickstart-tip">
+          <span class="quickstart-tip-icon" aria-hidden="true">💡</span>
+          <span>Данные не уходят на сервер — модель считает прямо в вашем браузере.</span>
+        </div>
+        <div class="quickstart-tip">
+          <span class="quickstart-tip-icon" aria-hidden="true">🎮</span>
+          <span>В <a href="simulator.html">3D-симуляторе</a> можно покрутить редуктор и увидеть, как дефект влияет на спектр.</span>
         </div>
       </div>
     </div>
@@ -605,136 +649,69 @@
 <div id="page-diag" style="display:none">
   <section class="section" style="padding-top:80px">
     <div class="container">
-      <div class="diag-launchpad">
-        <div class="diag-lead">
-          <div class="label" style="margin-bottom:8px">Интерактивный анализ сигналов</div>
-          <h2 class="diag-headline">Загрузите файл или выберите эталонный кейс и сразу получите диагноз</h2>
-          <p class="diag-copy">
-            Это основной рабочий экран: здесь можно загрузить собственный сигнал или открыть эталонный кейс,
-            посмотреть временную область и FFT, а затем получить итог классификации и понятную инженерную интерпретацию.
-          </p>
-          <div class="diag-chip-row">
-            <span class="diag-chip">SEU Full Dataset</span>
-            <span class="diag-chip">9 unified classes</span>
-            <span class="diag-chip">~2 ms browser inference</span>
-            <span class="diag-chip">signal + FFT + diagnosis</span>
-          </div>
-        </div>
-        <div class="diag-presets">
-          <div class="card-title">Готовые кейсы</div>
-          <div class="preset-grid">
-            <button class="preset-card" type="button" data-demo-class="tooth_miss">
-              <div class="preset-card-top">
-                <strong>Отсутствие зуба</strong>
-                <span class="hero-scenario-badge hero-scenario-badge--critical">GEAR FAULT</span>
-              </div>
-              <p>Показывает критический дефект зубчатой передачи и связь механического повреждения со спектром.</p>
-            </button>
-            <button class="preset-card" type="button" data-demo-class="inner_race">
-              <div class="preset-card-top">
-                <strong>Дефект внутренней обоймы</strong>
-                <span class="hero-scenario-badge hero-scenario-badge--warning">BEARING</span>
-              </div>
-              <p>Показывает, что модель различает дефекты подшипника и редуктора, а не только один тип узла.</p>
-            </button>
-            <button class="preset-card" type="button" data-demo-class="normal">
-              <div class="preset-card-top">
-                <strong>Норма</strong>
-                <span class="hero-scenario-badge">BASELINE</span>
-              </div>
-              <p>Базовый режим, с которого удобно начать сопоставление с дефектными состояниями.</p>
-            </button>
-          </div>
-          <div class="diag-director-panel">
-            <div class="diag-director-card">
-              <span class="diag-director-label">РАБОЧИЙ ЭКРАН</span>
-              <strong>Signal-to-decision</strong>
-              <p>Экран построен как единый поток: источник сигнала, визуальный анализ, evidence и итог модели без лишних переходов.</p>
-            </div>
-            <div class="diag-director-card">
-              <span class="diag-director-label">РЕЗУЛЬТАТ</span>
-              <strong>Signal + FFT + diagnosis</strong>
-              <p>После запуска файла или эталонного кейса пользователь сразу видит, как меняются графики и какой диагноз ставит модель.</p>
-            </div>
-          </div>
-        </div>
+      <div class="diag-hero">
+        <div class="diag-hero-badge">ШАГ 1 · ВЫБОР ИСТОЧНИКА</div>
+        <h2 class="diag-hero-title">Загрузите свой файл или запустите готовый кейс</h2>
+        <p class="diag-hero-lead">
+          Ниже два способа стартануть: слева — ваш файл, справа — три эталонных сигнала из SEU Dataset.
+          Результат появится сразу после выбора.
+        </p>
       </div>
 
-      <div class="diag-cinematic-grid">
-        <div class="page-compass page-compass--analysis">
-          <div class="page-compass-copy">
-            <div class="page-compass-kicker">РАБОЧИЙ ПОТОК</div>
-            <div class="page-compass-title">Анализ ведёт от сигнала к инженерному выводу без лишних экранов</div>
-            <div class="page-compass-note">Сначала выбираем источник сигнала, затем смотрим временную область и FFT, после этого получаем диагноз и при необходимости сохраняем результат в кабинет пользователя.</div>
-          </div>
-          <div class="page-compass-links">
-            <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('diag','uploadZone')">ЗАГРУЗИТЬ ФАЙЛ</button>
-            <button class="page-compass-link" type="button" onclick="App.goPageSection('diag','faultBtns')">ГОТОВЫЕ КЕЙСЫ</button>
-            <button class="page-compass-link" type="button" onclick="App.goPageSection('diag','sigCanvas')">ГРАФИКИ</button>
-            <button class="page-compass-link" type="button" onclick="App.goPageSection('diag','diagResult')">ДИАГНОЗ</button>
-            <button class="page-compass-link" type="button" onclick="goPage('profile')">ПРОФИЛЬ</button>
-          </div>
-        </div>
-
-        <div class="diag-storyboard-grid">
-          <div class="diag-storyboard-card">
-            <div class="card-title">01 · SOURCE</div>
-            <strong>Выбор сценария</strong>
-            <p>Начните с demo-case или загрузите собственный файл в формате SEU TXT, WAV, CSV, MAT, NPY или UFF.</p>
-          </div>
-          <div class="diag-storyboard-card">
-            <div class="card-title">02 · EVIDENCE</div>
-            <strong>Чтение сигнала</strong>
-            <p>Временная область и частотный спектр сразу показывают, какие паттерны лежат за будущим диагнозом модели.</p>
-          </div>
-          <div class="diag-storyboard-card">
-            <div class="card-title">03 · ACTION</div>
-            <strong>Следующий шаг</strong>
-            <p>После диагностики результат можно сохранить в профиль, сравнить с baseline или открыть физическую интерпретацию в 3D.</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="diag-tools-grid">
-        <div class="upload-zone" id="uploadZone">
+      <div class="analysis-source-grid">
+        <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="Загрузить файл для анализа">
           <input type="file" id="uploadFileInput" accept=".wav,.csv,.tsv,.txt,.mat,.npy,.npz,.dat,.uff">
-          <span class="icon">📁</span>
-          <div class="title">ЗАГРУЗИТЬ ФАЙЛ ДЛЯ АНАЛИЗА</div>
-          <div class="subtitle">SEU TXT, WAV, CSV, MAT, NPY, UFF — можно использовать реальный пример вместо синтетического сигнала</div>
+          <span class="upload-badge">СВОЙ ФАЙЛ</span>
+          <span class="icon" aria-hidden="true">📁</span>
+          <div class="title">Перетащите файл или нажмите</div>
+          <div class="subtitle">SEU TXT, WAV, CSV, MAT, NPY, UFF — любой вибросигнал с частотой дискретизации ≥ 2 кГц</div>
           <div class="upload-formats">
             <span class="format-badge">SEU TXT</span><span class="format-badge">WAV</span><span
             class="format-badge">CSV</span><span class="format-badge">MAT</span><span
             class="format-badge">NPY</span><span class="format-badge">UFF</span>
           </div>
+          <div class="upload-hint">Данные не уходят на сервер — всё считается у вас в браузере</div>
         </div>
-        <div class="diag-support-panel">
-          <div class="diag-support-card">
-            <div class="card-title">ФОРМАТЫ ИСТОЧНИКОВ</div>
-            <div class="diag-support-list">
-              <span>SEU TXT</span>
-              <span>WAV</span>
-              <span>CSV / TSV</span>
-              <span>MAT / NPY / NPZ</span>
-              <span>UFF / DAT</span>
+
+        <div class="analysis-presets">
+          <div class="analysis-presets-head">
+            <span class="analysis-presets-badge" aria-hidden="true">ИЛИ</span>
+            <div>
+              <strong>Попробуйте готовый сигнал</strong>
+              <p>Синтетика, собранная по физике дефектов SEU. Хороший способ разобраться, как выглядит каждый класс.</p>
             </div>
           </div>
-          <div class="diag-support-card">
-            <div class="card-title">ЧТО ДЕЛАЕТ СТРАНИЦА</div>
-            <p>Анализ извлекает признаки, строит FFT, подсвечивает evidence и собирает итог диагноза в одном рабочем экране без отдельного backend-ML шага.</p>
-          </div>
-          <div class="diag-support-card">
-            <div class="card-title">ДАЛЬШЕ ПО МАРШРУТУ</div>
-            <div class="diag-support-actions">
-              <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('diag','diagResult')">К ДИАГНОЗУ</button>
-              <button class="page-compass-link" type="button" onclick="goPage('profile')">В ПРОФИЛЬ</button>
-              <a href="simulator.html" class="page-compass-link" style="text-decoration:none;display:inline-flex">В 3D</a>
+          <button class="preset-card" type="button" data-demo-class="normal">
+            <div class="preset-card-top">
+              <strong>Норма</strong>
+              <span class="hero-scenario-badge">BASELINE</span>
             </div>
-          </div>
+            <p>Исправный узел — чистые гармоники GMF, без модуляций. Точка отсчёта для сравнения.</p>
+          </button>
+          <button class="preset-card" type="button" data-demo-class="tooth_miss">
+            <div class="preset-card-top">
+              <strong>Отсутствие зуба</strong>
+              <span class="hero-scenario-badge hero-scenario-badge--critical">GEAR FAULT</span>
+            </div>
+            <p>Критический дефект зубчатой передачи — сильные импульсные удары и разрушение GMF-структуры.</p>
+          </button>
+          <button class="preset-card" type="button" data-demo-class="inner_race">
+            <div class="preset-card-top">
+              <strong>Дефект внутренней обоймы</strong>
+              <span class="hero-scenario-badge hero-scenario-badge--warning">BEARING</span>
+            </div>
+            <p>Дефект подшипника на BPFI — модуляция при прохождении зоны нагрузки.</p>
+          </button>
         </div>
       </div>
 
-      <div class="label" style="margin-bottom:12px">Тестовые сигналы</div>
-      <div class="fault-btns" id="faultBtns"></div>
+      <details class="diag-more-demos">
+        <summary>
+          <strong>Ещё 7 тестовых сигналов</strong>
+          <span class="diag-more-hint">(скол зуба, трещина, износ, BPFO, BSF, комбинированный…)</span>
+        </summary>
+        <div class="fault-btns" id="faultBtns"></div>
+      </details>
 
       <div class="pipeline">
         <div class="pipe-step" id="ps1">
@@ -828,19 +805,18 @@
     <div class="container">
       <div class="profile-command-shell">
         <div class="profile-command-copy">
-          <div class="label" style="margin-bottom:8px">Профиль и рабочий кабинет</div>
-          <h2 class="diag-headline">Один кабинет для истории, alert-ов, сравнения и реальных измерений</h2>
+          <div class="label" style="margin-bottom:8px">Личный кабинет</div>
+          <h2 class="diag-headline">Здесь живёт твой учебный журнал</h2>
           <p class="diag-copy">
-            Здесь хранится рабочая история пользователя: сохранённые сеансы, сравнение с эталоном, alert-ы,
-            журнал действий и серверные измерения.
+            После входа сюда сохраняются сеансы анализа, сравнения с эталоном, alert-ы и журнал действий. Удобно возвращаться к тому, что уже разобрали на лабораторной.
           </p>
         </div>
         <div class="profile-command-nav">
-          <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('profile','profileHealthPanel')">СВОДКА</button>
+          <button class="page-compass-link page-compass-link--primary" type="button" onclick="App.goPageSection('profile','authPanel')">↳ ВОЙТИ / АККАУНТ</button>
+          <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','profileHealthPanel')">СВОДКА</button>
           <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','journalPanel')">ЖУРНАЛ</button>
           <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','analysisComparePanel')">СРАВНЕНИЕ</button>
           <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','monitoringPanel')">ИЗМЕРЕНИЯ</button>
-          <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','authPanel')">АККАУНТ</button>
         </div>
       </div>
 
@@ -891,7 +867,8 @@
             </div>
           </div>
           <div class="workspace-empty" id="profileAlertEmpty">
-            После входа и сохранения сеансов здесь появятся приоритетные узлы, новые измерения и рекомендации по следующему действию.
+            <strong>Alert-лента включится, когда запустите серверный контур.</strong>
+            А пока можно потренироваться на странице <button type="button" class="workspace-inline-link" onclick="goPage('diag')">Анализ</button>.
           </div>
           <div class="profile-alert-list" id="profileAlertList"></div>
         </div>
@@ -956,7 +933,11 @@
             </div>
 
             <div class="workspace-empty" id="historyEmpty">
-              История пока пуста. Первая сохранённая запись появится здесь и станет базой для сравнения состояний.
+              <strong>История пока пуста.</strong>
+              Первая запись появится после того, как вы сохраните результат анализа — станет базой для сравнения состояний.
+              <div class="workspace-empty-actions">
+                <button class="btn btn-primary" type="button" onclick="goPage('diag')">⚡ К АНАЛИЗУ</button>
+              </div>
             </div>
             <div class="history-list" id="historyList"></div>
 
@@ -1134,7 +1115,7 @@
 <script src="js/converter.js?v=20260411-upload-window-fix-9"></script>
 <script src="js/sensor.js?v=20260410-fft-fix"></script>
 <script src="js/viz.js?v=20260410-fft-fix"></script>
-<script src="js/app.js?v=20260417-product-copy-18"></script>
+<script src="js/app.js?v=20260419-ux-pass"></script>
 <!-- Notification toast container -->
 <div id="toastContainer" class="toast-container"></div>
 </body>

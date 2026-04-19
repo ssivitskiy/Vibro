@@ -797,6 +797,7 @@
     <h1>⚡ Vibro</h1><span class="ver">Simulator</span>
     <button class="hamburger" id="menuBtn" onclick="togPanel('lp')">☰</button>
     <button class="hamburger" id="chartBtn" onclick="togPanel('rp')" style="font-size:13px">📊</button>
+    <button class="sim-help-btn" id="simHelpBtn" onclick="showOnboard()" aria-label="Показать мини-гид по симулятору" title="Мини-гид">?</button>
     <a href="index.html" class="lnk">← Dashboard</a>
   </div>
   <div class="lp">
@@ -952,17 +953,35 @@
       <div id="stI"></div>
     </div>
   </div>
-  <div id="onboardHint" style="display:none;position:fixed;inset:0;z-index:300;background:rgba(6,10,18,.85);backdrop-filter:blur(4px);align-items:center;justify-content:center">
-    <div style="background:var(--panel);border:1px solid var(--border);border-radius:8px;padding:28px 36px;max-width:420px;text-align:center">
-      <div style="font:800 18px 'Outfit',sans-serif;background:linear-gradient(135deg,var(--accent),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;margin-bottom:12px">⚡ Vibro 3D</div>
-      <div style="font-size:12px;color:var(--text);line-height:1.8;margin-bottom:16px">
-        <div style="margin-bottom:8px"><span style="color:var(--accent)">🖱 Мышь:</span> вращение камеры</div>
-        <div style="margin-bottom:8px"><span style="color:var(--accent)">⚙ Слева:</span> тип, ступени, дефекты</div>
-        <div style="margin-bottom:8px"><span style="color:var(--accent)">📊 Справа:</span> осциллограмма, спектр и огибающая</div>
-        <div><span style="color:var(--accent)">🔧 Разборка:</span> взрыв-схема</div>
+  <div id="onboardHint" class="sim-onboard" style="display:none">
+    <div class="sim-onboard-box" role="dialog" aria-labelledby="simOnboardTitle" aria-modal="true">
+      <div id="simOnboardTitle" class="sim-onboard-title">⚡ Vibro 3D · мини-гид</div>
+      <p class="sim-onboard-lead">Симулятор — это учебный стенд. Покрутите ручки и смотрите, как меняются графики.</p>
+      <div class="sim-onboard-step">
+        <span class="sim-onboard-step-num">1</span>
+        <div>
+          <strong>Выберите дефект</strong>
+          <p>Слева в блоке «Пресеты» нажмите «Скол на S1» или «Множ. дефекты» — поза зубов и спектр изменятся сразу.</p>
+        </div>
       </div>
-      <button class="xbtn" onclick="dismissOnboard()" style="width:100%;padding:8px;font-size:12px;border-color:var(--accent);color:var(--accent)">Понятно</button>
-      <div style="font-size:8px;color:var(--dim);margin-top:8px">Больше не показывать</div>
+      <div class="sim-onboard-step">
+        <span class="sim-onboard-step-num">2</span>
+        <div>
+          <strong>Смотрите графики</strong>
+          <p>Справа — временной сигнал, FFT и огибающая. Сравните паттерны дефектов с нормой.</p>
+        </div>
+      </div>
+      <div class="sim-onboard-step">
+        <span class="sim-onboard-step-num">3</span>
+        <div>
+          <strong>Покрутите модель</strong>
+          <p>Левая кнопка мыши — вращение, колесо — zoom. Кнопка «🔧 Разборка» покажет взрыв-схему.</p>
+        </div>
+      </div>
+      <div class="sim-onboard-actions">
+        <button class="sim-onboard-primary" onclick="dismissOnboard()">Начать</button>
+      </div>
+      <div class="sim-onboard-hint">Вернуться к подсказкам можно кнопкой <strong>?</strong> в шапке</div>
     </div>
   </div>
 </div>
@@ -4236,7 +4255,12 @@ pre{background:#f5f5f5;padding:10px;border-radius:4px;font-size:10px;line-height
   function dismissOnboard() {
     localStorage.setItem('vmOnboard', '1');
     const oh = document.getElementById('onboardHint');
-    if (oh) { oh.style.opacity = '0'; setTimeout(() => oh.remove(), 300); }
+    if (oh) { oh.style.opacity = '0'; setTimeout(() => { oh.style.display = 'none'; oh.style.opacity = ''; }, 300); }
+  }
+
+  function showOnboard() {
+    const oh = document.getElementById('onboardHint');
+    if (oh) { oh.style.display = 'flex'; oh.style.opacity = '1'; }
   }
 
   // ═════════════════════════════════════════════════════════
