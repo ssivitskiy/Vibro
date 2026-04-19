@@ -1116,25 +1116,26 @@ const App = (() => {
     if (importBtn) importBtn.style.display = authState?.id && hasLegacySessions() && !isLegacyImportDone() ? 'inline-flex' : 'none';
 
     if (!apiReady) {
-      node.innerHTML = `<div class="workspace-summary-label">СЕРВЕРНЫЙ КОНТУР</div>
-        <div class="workspace-summary-value">API недоступен</div>
-        <div style="margin-top:8px;font-size:12px;color:#92a1b4;line-height:1.7">
-          Запустите FastAPI backend, чтобы авторизация, история и отчёты сохранялись в базе данных, а не только в браузере.
+      node.innerHTML = `<div class="workspace-state workspace-state--offline">
+          <div class="workspace-state-icon" aria-hidden="true">📡</div>
+          <div class="workspace-state-text">
+            <strong>Серверная часть не запущена</strong>
+            <p>Аккаунт и история работают на стороне FastAPI. Поднимите backend командой <code>make serve</code>, чтобы войти и сохранять сеансы.</p>
+            <p class="workspace-state-hint">Анализ сигналов и 3D-симулятор работают и без сервера.</p>
+          </div>
         </div>`;
       return;
     }
 
     if (!authState?.id) {
-      node.innerHTML = `<div class="workspace-summary-label">СЕРВЕРНЫЙ ДОСТУП</div>
-        <div class="workspace-summary-value">Гостевой режим</div>
-        <div style="margin-top:8px;font-size:12px;color:#92a1b4;line-height:1.7">
-          Зарегистрируйтесь или войдите по email и паролю, чтобы сохранять сеансы в базе данных и вести историю по узлам.
-        </div>
-        ${hasLegacySessions() && !isLegacyImportDone() ? `
-          <div style="margin-top:12px;font-size:12px;color:#c6d1de;line-height:1.7">
-            Найден локальный журнал в браузере. После входа его можно перенести на сервер.
-          </div>` : ''}
-      `;
+      node.innerHTML = `<div class="workspace-state workspace-state--guest">
+          <div class="workspace-state-icon" aria-hidden="true">👋</div>
+          <div class="workspace-state-text">
+            <strong>Добро пожаловать, гость</strong>
+            <p>Зарегистрируйтесь или войдите по email — и сеансы анализа будут сохраняться в вашем журнале.</p>
+            ${hasLegacySessions() && !isLegacyImportDone() ? `<p class="workspace-state-hint">В этом браузере нашлись старые записи — после входа их можно будет перенести.</p>` : ''}
+          </div>
+        </div>`;
       return;
     }
 
@@ -1180,7 +1181,7 @@ const App = (() => {
     if (!summaryNode || !alertListNode || !alertEmptyNode || !alertStatusNode || !alertFilterNode || !alertSortFieldNode || !alertSortInput) return;
 
     if (!apiReady) {
-      summaryNode.innerHTML = `<div class="workspace-empty-block">Backend недоступен. После запуска API здесь появятся health score, alert-ы и сводка по сохранённым узлам.</div>`;
+      summaryNode.innerHTML = `<div class="workspace-empty-block"><strong>Серверная часть не запущена.</strong> Сводка по узлам и health score собираются на стороне FastAPI backend — поднимите его командой <code>make serve</code>, чтобы увидеть эти панели. Анализ сигналов работает и без сервера.</div>`;
       alertStatusNode.innerHTML = '';
       alertFilterNode.style.display = 'none';
       alertSortFieldNode.style.display = 'none';
