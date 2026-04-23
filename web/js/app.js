@@ -19,6 +19,7 @@ const App = (() => {
   let selectedAlertId = null;
   let alertStatusFilter = 'all';
   let alertSortMode = 'priority';
+  let analysisGuideMode = 'first_time';
   let apiReady = false;
   let dashboardSummary = null;
   let selectedAssetId = null;
@@ -99,6 +100,8 @@ const App = (() => {
       reason: 'Сигнал чистый, без аномальных ударов и выраженных боковых полос вокруг рабочих гармоник.',
       short: 'Использовать как baseline для сравнения с дефектными кейсами.',
       priority: 'Продолжить мониторинг по графику',
+      plainLanguage: 'Оборудование работает штатно. В спектре нет лишних всплесков на характерных частотах — значит, вибрация вызвана только нормальной работой механизма.',
+      nextStep: 'Сохранить замер как эталон и вернуться через запланированный интервал.',
     },
     tooth_chip: {
       tone: 'warning',
@@ -108,6 +111,8 @@ const App = (() => {
       reason: 'Есть ударные события и боковые полосы вокруг GMF, характерные для локального повреждения зуба.',
       short: 'Хороший кейс для демонстрации раннего обнаружения gear fault.',
       priority: 'Осмотр в ближайший сервисный интервал',
+      plainLanguage: 'Похоже на скол или выкрашивание на одном зубе шестерни. При каждом обороте этот зуб даёт короткий удар — в спектре это выглядит как боковые полосы вокруг частоты зацепления.',
+      nextStep: 'Запланировать осмотр зубчатой пары на ближайшем ТО, следить за динамикой.',
     },
     tooth_miss: {
       tone: 'critical',
@@ -117,6 +122,8 @@ const App = (() => {
       reason: 'Наблюдаются сильные импульсы, разлом структуры GMF и высокий риск быстрого разрушения зацепления.',
       short: 'Максимальный вау-эффект: критический кейс с очевидным action item.',
       priority: 'Немедленное вмешательство',
+      plainLanguage: 'Зуб выкрошился или отсутствует — узел работает на грани отказа. Сильные периодические удары буквально ломают структуру спектра зацепления.',
+      nextStep: 'Остановить оборудование и не запускать до ручного осмотра зацепления.',
     },
     root_crack: {
       tone: 'critical',
@@ -126,6 +133,8 @@ const App = (() => {
       reason: 'Модуляция амплитуды и характерная бокополосная структура указывают на развивающееся разрушение.',
       short: 'Показывает, как модель ловит дефект до катастрофического отказа.',
       priority: 'Инспекция в кратчайший срок',
+      plainLanguage: 'В корне зуба развивается трещина. Жёсткость зацепления «плавает» под нагрузкой, поэтому сигнал модулируется и возникают характерные боковые полосы.',
+      nextStep: 'Сократить интервал до осмотра и проверить корень зуба методом NDT.',
     },
     surface_wear: {
       tone: 'warning',
@@ -135,6 +144,8 @@ const App = (() => {
       reason: 'Растёт широкополосный шум и высокочастотная энергия, что характерно для износа поверхности.',
       short: 'Подходит для демонстрации сценария профилактического обслуживания, а не аварийной остановки.',
       priority: 'Плановое обслуживание',
+      plainLanguage: 'Поверхность зубьев постепенно изнашивается — рабочий профиль «плывёт». В спектре это видно как равномерный рост шума и высокочастотной энергии, без одиночных сильных ударов.',
+      nextStep: 'Проверить смазку и нагрузку, отметить в журнале для планового ТО.',
     },
     ball_fault: {
       tone: 'warning',
@@ -144,6 +155,8 @@ const App = (() => {
       reason: 'Есть периодические ударные события и рост энергии в зоне BSF.',
       short: 'Подчёркивает, что продукт умеет отличать bearing issues от gear fault.',
       priority: 'Повторный замер и осмотр',
+      plainLanguage: 'Повреждён один из шариков подшипника — при каждом обороте он даёт аккуратный периодический удар. Частота этих ударов (BSF) подсказывает модели, что дело именно в шарике, а не в обойме.',
+      nextStep: 'Сделать повторный замер через неделю и осмотреть подшипник на ТО.',
     },
     inner_race: {
       tone: 'critical',
@@ -153,6 +166,8 @@ const App = (() => {
       reason: 'Частые импульсы и энергия вокруг BPFI указывают на развивающийся дефект внутренней обоймы.',
       short: 'Показывает, что система различает дефекты подшипников и зубчатых передач.',
       priority: 'Ускоренное обслуживание',
+      plainLanguage: 'Дефект на внутренней обойме подшипника, которая крутится вместе с валом. Из-за этого удары идут часто и под нагрузкой — это самая «болезненная» зона подшипника.',
+      nextStep: 'Сократить время до обслуживания и проверить подшипник под нагрузкой.',
     },
     outer_race: {
       tone: 'warning',
@@ -162,6 +177,8 @@ const App = (() => {
       reason: 'Спектр показывает устойчивые импульсные компоненты и рост энергии около BPFO.',
       short: 'Показывает уверенный bearing diagnosis с понятной локализацией.',
       priority: 'Осмотр в ближайшее время',
+      plainLanguage: 'Дефект на наружной (неподвижной) обойме подшипника. Удары стабильно повторяются с частотой BPFO — сигнал получается характерный и легко узнаваемый.',
+      nextStep: 'Осмотреть подшипник в ближайшее ТО и зафиксировать скорость роста дефекта.',
     },
     combination: {
       tone: 'critical',
@@ -171,6 +188,8 @@ const App = (() => {
       reason: 'В сигнале и спектре наложены несколько характерных паттернов, что увеличивает неопределённость и риск.',
       short: 'Показывает сложный случай, где в сигнале одновременно проявляются несколько механизмов деградации.',
       priority: 'Расширенная диагностика узла',
+      plainLanguage: 'В одном узле одновременно развивается несколько дефектов — их паттерны накладываются друг на друга. Модель видит смесь признаков и не берёт на себя однозначный вердикт.',
+      nextStep: 'Передать кейс инженеру-диагносту для расширенного анализа.',
     },
   };
   authState = normalizeAuth(null);
@@ -185,6 +204,8 @@ const App = (() => {
       reason: 'Система обнаружила отклонение, но для точной интерпретации нужен дополнительный контекст.',
       short: 'Требуется инженерная верификация результата.',
       priority: 'Ручной review',
+      plainLanguage: 'Система увидела что-то необычное, но уверенности недостаточно для однозначного диагноза. Такой кейс лучше передать на ручной review.',
+      nextStep: 'Сохранить кейс и показать его инженеру-диагносту.',
     };
   }
 
@@ -1055,6 +1076,309 @@ const App = (() => {
     return authState?.id ? 'СОХРАНИТЬ В ПРОФИЛЬ' : 'ВОЙТИ В ПРОФИЛЬ';
   }
 
+  function buildUxActionMarkup(action, className) {
+    const toneClass = action.tone === 'primary' ? ` ${className}--primary` : '';
+    const attrs = [
+      `class="${className}${toneClass}"`,
+      'type="button"',
+      `data-ux-action="${escapeHtml(action.kind)}"`,
+    ];
+    if (action.value != null) attrs.push(`data-ux-value="${escapeHtml(action.value)}"`);
+    if (action.page != null) attrs.push(`data-ux-page="${escapeHtml(action.page)}"`);
+    if (action.section != null) attrs.push(`data-ux-section="${escapeHtml(action.section)}"`);
+    return `<button ${attrs.join(' ')}>${escapeHtml(action.label)}</button>`;
+  }
+
+  function runUxAction(kind, dataset = {}) {
+    switch (kind) {
+      case 'demo':
+        runScenario(dataset.uxValue || 'normal');
+        break;
+      case 'page':
+        goPage(dataset.uxValue || 'home');
+        break;
+      case 'section':
+        goHomeSection(dataset.uxValue || 'section-quickstart');
+        break;
+      case 'page-section':
+        goPageSection(dataset.uxPage || 'profile', dataset.uxSection || dataset.uxValue || 'authPanel');
+        break;
+      case 'save':
+        saveCurrentSession();
+        break;
+      case 'journal':
+        openJournal();
+        break;
+      case '3d':
+        openSimulatorFromAnalysis();
+        break;
+      case 'scroll':
+        el(dataset.uxValue || 'diagResult')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        break;
+      default:
+        break;
+    }
+  }
+
+  function buildAnalysisGuideConfig() {
+    if (currentDiagnosis) {
+      const diagnosisName = VM.RU[currentDiagnosis.cls] || currentDiagnosis.cls;
+      return {
+        kicker: 'РЕЗУЛЬТАТ ГОТОВ',
+        state: diagnosisName.toUpperCase(),
+        title: `Диагноз готов: ${diagnosisName}`,
+        lead: 'Система уже собрала вероятности, пояснение простыми словами и рекомендуемое действие. Лучший следующий шаг — не потерять контекст: сохранить сеанс и открыть его в профиле или 3D.',
+        steps: [
+          {
+            label: 'ПОНЯТЬ',
+            title: 'Прочитайте объяснение человеческим языком',
+            note: 'Блок «Что это значит?» перевёл модельный вывод в понятное описание состояния узла.',
+          },
+          {
+            label: 'СОХРАНИТЬ',
+            title: authState?.id ? 'Сохраните сеанс в журнал состояний' : 'Войдите в профиль и затем сохраните сеанс',
+            note: authState?.id
+              ? 'После сохранения результат попадёт в профиль, compare mode и историю измерений.'
+              : 'Без входа вы увидите диагноз, но серверный журнал и сравнение состояний не включатся.',
+          },
+          {
+            label: 'ПРОВЕРИТЬ',
+            title: 'Откройте профиль или 3D-симулятор',
+            note: currentDiagnosis.playbook?.nextStep || currentDiagnosis.playbook?.priority || 'Так проще закрепить вывод и понять физическую природу дефекта.',
+          },
+        ],
+        tip: currentDiagnosis.playbook?.action || currentDiagnosis.playbook?.nextStep || 'Сначала сохраните сеанс, затем вернитесь к сравнению с baseline.',
+        actions: [
+          { kind: 'save', label: getSaveActionLabel(), tone: 'primary' },
+          { kind: 'page', value: 'profile', label: 'ОТКРЫТЬ ПРОФИЛЬ' },
+          { kind: '3d', label: 'ПОКАЗАТЬ В 3D' },
+        ],
+      };
+    }
+
+    if (diagLocked) {
+      return {
+        kicker: 'ИДЁТ АНАЛИЗ',
+        state: 'ANALYZING',
+        title: 'Подождите пару секунд, система уже считает сигнал',
+        lead: 'Сейчас последовательно строятся временная область, спектр, признаки и итоговый диагноз. Ниже автоматически появится готовый результат без ручного обновления страницы.',
+        steps: [
+          { label: '01', title: 'Читаем источник', note: 'Файл или демо-сигнал приводится к единому формату анализа.' },
+          { label: '02', title: 'Строим спектр и признаки', note: 'FFT, огибающая и диагностические признаки считаются прямо в браузере.' },
+          { label: '03', title: 'Готовим вывод', note: 'Как только расчёт завершится, появятся диагноз, вероятности и следующий шаг.' },
+        ],
+        tip: 'Обычно первый результат появляется быстро. После этого можно сразу сохранить сеанс или открыть 3D-объяснение.',
+        actions: [
+          { kind: 'scroll', value: 'diagResult', label: 'ЖДАТЬ РЕЗУЛЬТАТ', tone: 'primary' },
+        ],
+      };
+    }
+
+    const guides = {
+      first_time: {
+        kicker: 'РЕКОМЕНДОВАННЫЙ СТАРТ',
+        state: 'GUIDED',
+        title: 'Начните с готового кейса, чтобы понять интерфейс без риска ошибиться',
+        lead: 'Если вы здесь впервые, не загружайте сразу свой файл. Сначала посмотрите один понятный демонстрационный сценарий, а потом повторите тот же путь уже на своих данных.',
+        steps: [
+          { label: 'ШАГ 1', title: 'Откройте готовый кейс справа', note: 'Лучший первый запуск — «Норма»: сразу станет понятна структура экрана и логика результата.' },
+          { label: 'ШАГ 2', title: 'Посмотрите, как читается диагноз', note: 'Ниже появятся сигнал, спектр, объяснение и рекомендуемое действие.' },
+          { label: 'ШАГ 3', title: 'После этого загружайте свой файл', note: 'Интерфейс уже будет знаком, поэтому шанс запутаться резко упадёт.' },
+        ],
+        tip: 'Хороший порядок для первого знакомства: Норма → Отсутствие зуба → свой файл.',
+        actions: [
+          { kind: 'demo', value: 'normal', label: 'ЗАПУСТИТЬ КЕЙС «НОРМА»', tone: 'primary' },
+          { kind: 'demo', value: 'tooth_miss', label: 'ПОКАЗАТЬ КРИТИЧЕСКИЙ ДЕФЕКТ' },
+        ],
+      },
+      own_file: {
+        kicker: 'РАБОТА СО СВОИМ ФАЙЛОМ',
+        state: 'UPLOAD',
+        title: 'Загрузите сигнал и сразу получите понятный вывод без ручной подготовки',
+        lead: 'Файл можно просто перетащить в зону слева. После загрузки Vibro сам покажет временной сигнал, FFT, вероятности классов и человеческое объяснение результата.',
+        steps: [
+          { label: 'ФАЙЛ', title: 'Перетащите запись в upload-зону', note: 'Поддерживаются SEU TXT, WAV, CSV, MAT, NPY и UFF.' },
+          { label: 'ПРОВЕРКА', title: 'Дождитесь автоматического расчёта', note: 'Ничего дополнительно нажимать не нужно: расчёт стартует сразу.' },
+          { label: 'РЕЗУЛЬТАТ', title: 'Сохраните удачный кейс в профиль', note: 'Так он не потеряется и появится в журнале состояний для будущего сравнения.' },
+        ],
+        tip: 'Если файл большой, система сама выберет репрезентативное окно для первого диагноза.',
+        actions: [
+          { kind: 'scroll', value: 'uploadZone', label: 'ПЕРЕЙТИ К ЗАГРУЗКЕ', tone: 'primary' },
+          { kind: 'demo', value: 'normal', label: 'СНАЧАЛА ПОСМОТРЕТЬ ДЕМО' },
+        ],
+      },
+      compare_faults: {
+        kicker: 'УЧЕБНЫЙ РЕЖИМ',
+        state: 'COMPARE',
+        title: 'Сравните разные дефекты и почувствуйте, как меняется интерпретация',
+        lead: 'Этот сценарий полезен, когда нужно быстро объяснить разницу между gear fault и bearing fault. Пара контрастных кейсов даёт куда больше понимания, чем статичный слайд.',
+        steps: [
+          { label: 'GEAR', title: 'Откройте тяжёлый дефект зубчатой пары', note: '«Отсутствие зуба» сразу показывает критический паттерн и жёсткое рекомендуемое действие.' },
+          { label: 'BEARING', title: 'Затем переключитесь на подшипник', note: 'Например, внутренняя обойма: увидите другой характер модуляции и другую интерпретацию.' },
+          { label: 'PROFILE', title: 'Сохраните оба результата и сравните их', note: 'В профиле легче объяснить разницу между состояниями и baseline.' },
+        ],
+        tip: 'Для наглядной демонстрации хорошо работает связка: Отсутствие зуба → Дефект внутренней обоймы.',
+        actions: [
+          { kind: 'demo', value: 'tooth_miss', label: 'ОТКРЫТЬ GEAR FAULT', tone: 'primary' },
+          { kind: 'demo', value: 'inner_race', label: 'ОТКРЫТЬ BEARING FAULT' },
+        ],
+      },
+    };
+
+    return guides[analysisGuideMode] || guides.first_time;
+  }
+
+  function renderAnalysisCoach() {
+    const titleNode = el('analysisCoachTitle');
+    const leadNode = el('analysisCoachLead');
+    const kickerNode = el('analysisCoachKicker');
+    const stateNode = el('analysisCoachState');
+    const stepsNode = el('analysisCoachSteps');
+    const tipNode = el('analysisCoachTip');
+    const actionsNode = el('analysisCoachActions');
+    if (!titleNode || !leadNode || !stepsNode || !tipNode || !actionsNode) return;
+
+    const config = buildAnalysisGuideConfig();
+    kickerNode.textContent = config.kicker;
+    stateNode.textContent = config.state;
+    titleNode.textContent = config.title;
+    leadNode.textContent = config.lead;
+    stepsNode.innerHTML = (config.steps || []).map((step) => `
+      <article class="analysis-coach-step">
+        <span class="analysis-coach-step-label">${escapeHtml(step.label)}</span>
+        <strong>${escapeHtml(step.title)}</strong>
+        <p>${escapeHtml(step.note)}</p>
+      </article>
+    `).join('');
+    tipNode.textContent = config.tip || '';
+    actionsNode.innerHTML = (config.actions || []).map((action) => buildUxActionMarkup(action, 'analysis-coach-action')).join('');
+
+    document.querySelectorAll('[data-guide-mode]').forEach((button) => {
+      const disabled = !!currentDiagnosis || diagLocked;
+      button.disabled = disabled;
+      button.classList.toggle('is-active', !disabled && button.dataset.guideMode === analysisGuideMode);
+    });
+  }
+
+  function buildProfileOnboardConfig() {
+    const hasAuth = !!authState?.id;
+    const hasSessions = sessionHistory.length > 0;
+    const hasComparison = sessionHistory.length > 1;
+    const hasCurrent = !!currentDiagnosis;
+
+    let kicker = 'ПРОГРЕСС РАБОТЫ';
+    let title = 'Войдите, сохраните первый анализ и включите нормальный рабочий цикл';
+    let lead = 'После этого кабинет станет по-настоящему полезным: появятся история, baseline, сравнение состояний и журнал действий.';
+    let actions = [
+      { kind: 'page-section', page: 'profile', section: 'authPanel', label: 'ОТКРЫТЬ ВХОД', tone: 'primary' },
+      { kind: 'page', value: 'diag', label: 'СНАЧАЛА ПОПРОБОВАТЬ АНАЛИЗ' },
+    ];
+
+    if (!apiReady) {
+      kicker = 'ЛОКАЛЬНЫЙ РЕЖИМ';
+      title = 'Backend сейчас недоступен, но анализ и демо-сценарии продолжают работать';
+      lead = 'Можно спокойно изучать интерфейс, запускать кейсы и готовить сигналы. Когда серверный контур поднимется, кабинет снова начнёт сохранять историю и measurements.';
+      actions = [
+        { kind: 'page', value: 'diag', label: 'ПЕРЕЙТИ К АНАЛИЗУ', tone: 'primary' },
+        { kind: '3d', label: 'ОТКРЫТЬ 3D' },
+      ];
+    } else if (hasAuth && !hasSessions && hasCurrent) {
+      kicker = 'ПОЧТИ ГОТОВО';
+      title = 'Текущий диагноз уже есть. Остался один шаг: сохранить его в профиль';
+      lead = 'После сохранения журнал состояний перестанет быть пустым, а compare mode начнёт работать как полноценный рабочий инструмент.';
+      actions = [
+        { kind: 'save', label: 'СОХРАНИТЬ ТЕКУЩИЙ РЕЗУЛЬТАТ', tone: 'primary' },
+        { kind: 'page-section', page: 'profile', section: 'journalPanel', label: 'ПЕРЕЙТИ К ЖУРНАЛУ' },
+      ];
+    } else if (hasAuth && !hasSessions) {
+      kicker = 'СЛЕДУЮЩИЙ ШАГ';
+      title = 'Аккаунт готов. Теперь нужен первый сохранённый анализ';
+      lead = 'Запустите любой сценарий на странице анализа и вернитесь сюда. После первой записи профиль станет полезным не только как форма входа, но и как полноценный журнал состояний.';
+      actions = [
+        { kind: 'page', value: 'diag', label: 'К АНАЛИЗУ', tone: 'primary' },
+        { kind: 'demo', value: 'normal', label: 'СНАЧАЛА ОТКРЫТЬ ДЕМО' },
+      ];
+    } else if (hasAuth && hasSessions && !hasComparison) {
+      kicker = 'ЕЩЁ ОДИН ШАГ';
+      title = 'Первый сеанс сохранён. Теперь добавьте вторую запись для сравнения';
+      lead = 'После двух и более сеансов профиль превращается в удобный инструмент: можно сравнивать baseline, подтверждать деградацию и фиксировать эффект обслуживания.';
+      actions = [
+        { kind: 'page', value: 'diag', label: 'ДОБАВИТЬ ЕЩЁ ОДИН СЕАНС', tone: 'primary' },
+        { kind: 'page-section', page: 'profile', section: 'analysisComparePanel', label: 'ОТКРЫТЬ COMPARE MODE' },
+      ];
+    } else if (hasAuth && hasComparison) {
+      kicker = 'РАБОЧИЙ КОНТУР АКТИВЕН';
+      title = 'Профиль уже работает как настоящий учебный журнал состояния оборудования';
+      lead = 'У вас есть история, сравнение и мониторинг. Теперь можно двигаться по циклу «анализ → сохранение → сравнение → действие» без потери контекста.';
+      actions = [
+        { kind: 'page-section', page: 'profile', section: 'analysisComparePanel', label: 'СРАВНИТЬ СОСТОЯНИЯ', tone: 'primary' },
+        { kind: 'page-section', page: 'profile', section: 'monitoringPanel', label: 'ОТКРЫТЬ ИЗМЕРЕНИЯ' },
+      ];
+    }
+
+    const steps = [
+      {
+        num: '01',
+        title: 'Аккаунт',
+        note: hasAuth
+          ? `Вошли как ${authState.name || authState.email || 'пользователь'}. Серверный кабинет доступен.`
+          : 'Войдите, чтобы история и измерения сохранялись не только в текущем браузере.',
+        state: hasAuth ? 'ГОТОВО' : apiReady ? 'СЕЙЧАС' : 'ПАУЗА',
+        done: hasAuth,
+        current: !hasAuth && apiReady,
+      },
+      {
+        num: '02',
+        title: 'Первый сохранённый анализ',
+        note: hasSessions
+          ? `Уже сохранено ${sessionHistory.length} ${sessionHistory.length === 1 ? 'сеанс' : sessionHistory.length < 5 ? 'сеанса' : 'сеансов'}.`
+          : hasCurrent
+            ? 'Текущий диагноз уже готов. Его можно сразу отправить в журнал состояний.'
+            : 'Запустите анализ на странице «Анализ» и сохраните первый результат.',
+        state: hasSessions ? 'ГОТОВО' : hasAuth ? 'СЕЙЧАС' : 'ДАЛЕЕ',
+        done: hasSessions,
+        current: hasAuth && !hasSessions,
+      },
+      {
+        num: '03',
+        title: 'Сравнение и monitoring',
+        note: hasComparison
+          ? 'Можно сравнивать baseline с дефектными кейсами и вести рабочий журнал действий.'
+          : 'После двух и более записей compare mode и monitoring становятся по-настоящему полезными.',
+        state: hasComparison ? 'ГОТОВО' : hasSessions ? 'СЛЕДУЮЩИЙ' : 'ПОТОМ',
+        done: hasComparison,
+        current: hasSessions && !hasComparison,
+      },
+    ];
+
+    return { kicker, title, lead, actions, steps };
+  }
+
+  function renderProfileOnboard() {
+    const titleNode = el('profileOnboardTitle');
+    const leadNode = el('profileOnboardLead');
+    const kickerNode = el('profileOnboardKicker');
+    const stepsNode = el('profileOnboardSteps');
+    const actionsNode = el('profileOnboardActions');
+    if (!titleNode || !leadNode || !stepsNode || !actionsNode) return;
+
+    const config = buildProfileOnboardConfig();
+    kickerNode.textContent = config.kicker;
+    titleNode.textContent = config.title;
+    leadNode.textContent = config.lead;
+    stepsNode.innerHTML = (config.steps || []).map((step) => `
+      <article class="profile-onboard-step${step.done ? ' is-done' : ''}${step.current ? ' is-current' : ''}">
+        <div class="profile-onboard-step-top">
+          <span class="profile-onboard-step-num">${escapeHtml(step.num)}</span>
+          <span class="profile-onboard-step-state">${escapeHtml(step.state)}</span>
+        </div>
+        <strong>${escapeHtml(step.title)}</strong>
+        <p>${escapeHtml(step.note)}</p>
+      </article>
+    `).join('');
+    actionsNode.innerHTML = (config.actions || []).map((action) => buildUxActionMarkup(action, 'profile-onboard-action')).join('');
+  }
+
   function buildCaptureSummaryMarkup() {
     if (!currentDiagnosis) {
       return 'Запустите анализ, затем сохраните текущий результат в журнал состояний.';
@@ -1080,11 +1404,14 @@ const App = (() => {
 
   function renderCaptureSummary() {
     const node = el('captureSummary');
-    if (!node) return;
-    node.innerHTML = buildCaptureSummaryMarkup();
-    document.querySelectorAll('[data-save-session]').forEach((button) => {
-      button.textContent = getSaveActionLabel();
-    });
+    if (node) {
+      node.innerHTML = buildCaptureSummaryMarkup();
+      document.querySelectorAll('[data-save-session]').forEach((button) => {
+        button.textContent = getSaveActionLabel();
+      });
+    }
+    renderAnalysisCoach();
+    renderProfileOnboard();
   }
 
   function updateHeaderProfile() {
@@ -1674,6 +2001,7 @@ const App = (() => {
   }
 
   function renderWorkspace() {
+    renderProfileOnboard();
     renderProfileHealthOverview();
     renderAlertLifecyclePanel();
     renderHistory();
@@ -3823,6 +4151,8 @@ const App = (() => {
     });
     window.scrollTo({top:0,behavior:'smooth'});
     window.setTimeout(updateViewportChrome, 80);
+    renderAnalysisCoach();
+    renderProfileOnboard();
   }
 
   function goHomeSection(sectionId) {
@@ -3932,6 +4262,7 @@ const App = (() => {
                 }
               } else { showDiagFake(cls,color); }
               diagLocked=false;
+              renderAnalysisCoach();
             },400);
           },350);
         },400);
@@ -4143,6 +4474,7 @@ const App = (() => {
                 el('diagResult').classList.add('show');
               }
               diagLocked=false;
+              renderAnalysisCoach();
             },400);
           },350);
         },400);
@@ -4152,6 +4484,7 @@ const App = (() => {
       el('sigDesc').textContent=err.message;
       if (el('sigDesc')) el('sigDesc').dataset.baseText = err.message;
       diagLocked=false;
+      renderAnalysisCoach();
     }
   }
 
@@ -4290,6 +4623,17 @@ const App = (() => {
         <div class="label">РЕЗУЛЬТАТ КЛАССИФИКАЦИИ</div>
         <div class="diag-class" style="color:${color}">${VM.ICONS[cls]} ${VM.RU[cls].toUpperCase()}</div>
         <div class="diag-text">${VM.DESCRIPTIONS[cls].diag}</div>
+        <div class="diag-explanation-card diag-explanation-card--${playbook.tone}">
+          <div class="diag-explanation-head">
+            <span class="diag-explanation-icon" aria-hidden="true">💡</span>
+            <span class="diag-explanation-title">Что это значит?</span>
+          </div>
+          <p class="diag-explanation-text">${playbook.plainLanguage || ''}</p>
+          ${playbook.nextStep ? `<div class="diag-explanation-next">
+            <span class="diag-explanation-next-label">СЛЕДУЮЩИЙ ШАГ</span>
+            <span class="diag-explanation-next-text">${playbook.nextStep}</span>
+          </div>` : ''}
+        </div>
         <div class="diag-story-grid">
           <div class="diag-story-card">
             <div class="diag-story-label">SEVERITY</div>
@@ -4761,8 +5105,20 @@ const App = (() => {
 
   // ═══ INIT ═══
   async function init() {
+    document.body.dataset.page = document.body.dataset.page || 'home';
     document.querySelectorAll('.nav-btn').forEach(b => {
       if (b.dataset.page) b.addEventListener('click', () => goPage(b.dataset.page));
+    });
+    document.querySelectorAll('[data-guide-mode]').forEach((button) => {
+      button.addEventListener('click', () => {
+        analysisGuideMode = button.dataset.guideMode || 'first_time';
+        renderAnalysisCoach();
+      });
+    });
+    document.addEventListener('click', (event) => {
+      const actionNode = event.target.closest('[data-ux-action]');
+      if (!actionNode) return;
+      runUxAction(actionNode.dataset.uxAction, actionNode.dataset);
     });
     setupCabinetUI();
     setupUpload();

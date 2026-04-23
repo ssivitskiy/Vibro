@@ -13,7 +13,7 @@
   <meta name="theme-color" content="#060a12">
   <link rel="icon" type="image/svg+xml" href="favicon.svg">
   <title>Vibro — Система вибродиагностики</title>
-  <link rel="stylesheet" href="css/style.css?v=20260419-ux-pass">
+  <link rel="stylesheet" href="css/style.css?v=20260419-ux-pass-2">
 </head>
 <body data-mode="product">
 <a href="#page-home" class="skip-link">Перейти к содержанию</a>
@@ -46,6 +46,21 @@
   <a href="simulator.html" class="nav-btn" style="text-decoration:none;display:flex;align-items:center;gap:8px">3D СИМУЛЯТОР</a>
   <button class="nav-btn" onclick="goHomeSection('section-conclusion');document.getElementById('mobileNav').classList.remove('open');document.querySelector('.hamburger-menu').textContent='☰'">ВЫВОДЫ</button>
 </div>
+
+<section class="action-dock-shell" aria-label="Быстрые сценарии работы">
+  <div class="container action-dock">
+    <div class="action-dock-copy">
+      <div class="action-dock-kicker">БЫСТРЫЙ МАРШРУТ</div>
+      <p class="action-dock-text">Если вы впервые здесь, идите слева направо: разберитесь в продукте, попробуйте анализ и только потом сохраняйте результат в журнал.</p>
+    </div>
+    <div class="action-dock-actions">
+      <button class="action-dock-btn" type="button" onclick="goHomeSection('section-quickstart')">КАК НАЧАТЬ</button>
+      <button class="action-dock-btn action-dock-btn--primary" type="button" onclick="goPage('diag')">ПОПРОБОВАТЬ АНАЛИЗ</button>
+      <button class="action-dock-btn" type="button" onclick="goPage('profile')">СОХРАНИТЬ В ПРОФИЛЬ</button>
+      <a href="simulator.html" class="action-dock-btn action-dock-btn--link">3D ОБЪЯСНЕНИЕ</a>
+    </div>
+  </div>
+</section>
 
 <!-- ══════════════════════════════════════════════════════════════
      HOME
@@ -658,6 +673,29 @@
         </p>
       </div>
 
+      <div class="analysis-coach" id="analysisCoach" aria-live="polite">
+        <div class="analysis-coach-modes" role="tablist" aria-label="Режим помощи">
+          <button class="analysis-coach-mode is-active" type="button" data-guide-mode="first_time">Я впервые здесь</button>
+          <button class="analysis-coach-mode" type="button" data-guide-mode="own_file">У меня свой файл</button>
+          <button class="analysis-coach-mode" type="button" data-guide-mode="compare_faults">Хочу понять отличия дефектов</button>
+        </div>
+        <div class="analysis-coach-panel">
+          <div class="analysis-coach-panel-top">
+            <div>
+              <div class="analysis-coach-kicker" id="analysisCoachKicker">РЕКОМЕНДОВАННЫЙ СЦЕНАРИЙ</div>
+              <h3 class="analysis-coach-title" id="analysisCoachTitle">Начните с готового кейса, чтобы понять интерфейс без риска ошибиться</h3>
+            </div>
+            <span class="analysis-coach-state" id="analysisCoachState">GUIDED</span>
+          </div>
+          <p class="analysis-coach-lead" id="analysisCoachLead">
+            Самый мягкий вход — открыть эталонный сигнал, посмотреть, как читается диагноз, и только потом переходить к своему файлу.
+          </p>
+          <div class="analysis-coach-steps" id="analysisCoachSteps"></div>
+          <div class="analysis-coach-tip" id="analysisCoachTip"></div>
+          <div class="analysis-coach-actions" id="analysisCoachActions"></div>
+        </div>
+      </div>
+
       <div class="analysis-source-grid">
         <div class="upload-zone" id="uploadZone" role="button" tabindex="0" aria-label="Загрузить файл для анализа">
           <input type="file" id="uploadFileInput" accept=".wav,.csv,.tsv,.txt,.mat,.npy,.npz,.dat,.uff">
@@ -818,6 +856,18 @@
           <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','analysisComparePanel')">СРАВНЕНИЕ</button>
           <button class="page-compass-link" type="button" onclick="App.goPageSection('profile','monitoringPanel')">ИЗМЕРЕНИЯ</button>
         </div>
+      </div>
+
+      <div class="profile-onboard" id="profileOnboard" aria-live="polite">
+        <div class="profile-onboard-copy">
+          <div class="profile-onboard-kicker" id="profileOnboardKicker">ПРОГРЕСС РАБОТЫ</div>
+          <h3 class="profile-onboard-title" id="profileOnboardTitle">Войдите, сохраните первый анализ и включите нормальный рабочий цикл</h3>
+          <p class="profile-onboard-lead" id="profileOnboardLead">
+            После этого кабинет станет по-настоящему полезным: появятся история, baseline, сравнение состояний и журнал действий.
+          </p>
+        </div>
+        <div class="profile-onboard-grid" id="profileOnboardSteps"></div>
+        <div class="profile-onboard-actions" id="profileOnboardActions"></div>
       </div>
 
       <div class="profile-health-shell" id="profileHealthPanel">
@@ -1115,7 +1165,7 @@
 <script src="js/converter.js?v=20260411-upload-window-fix-9"></script>
 <script src="js/sensor.js?v=20260410-fft-fix"></script>
 <script src="js/viz.js?v=20260410-fft-fix"></script>
-<script src="js/app.js?v=20260419-ux-pass"></script>
+<script src="js/app.js?v=20260419-ux-pass-2"></script>
 <!-- Notification toast container -->
 <div id="toastContainer" class="toast-container"></div>
 </body>
